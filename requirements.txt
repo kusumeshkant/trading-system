@@ -16,8 +16,8 @@ ccxt==4.3.6               # unified exchange interface
 
 # ─── Market Data ───────────────────────────────────
 pandas==2.2.2
-numpy==1.26.4
-pandas-ta==0.3.14b         # technical indicators
+numpy==2.2.4
+pandas-ta==0.4.71b0        # technical indicators
 aiohttp==3.9.5
 
 # ─── Backtesting ───────────────────────────────────
