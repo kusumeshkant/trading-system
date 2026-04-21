@@ -16,8 +16,8 @@ python-binance==1.0.19
 ccxt==4.4.71
 
 # ─── Market Data ───────────────────────────────────
-pandas==2.2.3
-numpy==2.2.6
+pandas>=2.3.2
+numpy>=2.2.6
 pandas-ta==0.4.71b0
 aiohttp==3.10.11
 
