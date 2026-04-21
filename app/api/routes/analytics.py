@@ -28,10 +28,13 @@ from app.analytics.notifications.telegram_sender import (
 )
 from app.analytics.notifications.email_sender import send_email_report, build_daily_email_html
 
+from app.analytics.db import init_db, save_trade, delete_trade as db_delete, load_all_trades
 router = APIRouter(prefix="/analytics", tags=["analytics"])
 
-# In-memory store — replace with DB session injection in production
-_records: List[TradeRecord] = []
+init_db()
+
+def _records() -> List[TradeRecord]:
+    return load_all_trades()
 
 
 # ─── Schemas ───────────────────────────────────────────────────────────────────
@@ -85,7 +88,7 @@ async def record_trade(body: TradeRecordIn):
             calculate_duration_minutes(record.opened_at, record.closed_at), 2
         )
 
-    _records.append(record)
+    save_trade(record)
     return asdict(generate_trade_report(record))
 
 
@@ -96,7 +99,7 @@ async def list_trades(
     mode: Optional[str] = None,
     limit: int = Query(100, ge=1, le=1000),
 ):
-    result = _records
+    result = _records()
     if asset:
         result = [t for t in result if t.asset == asset]
     if strategy:
@@ -113,9 +116,9 @@ async def get_trade(trade_id: str):
 
 
 @router.delete("/trades/{trade_id}", summary="Remove a trade record")
-async def delete_trade(trade_id: str):
+async def remove_trade(trade_id: str):
     record = _find(trade_id)
-    _records.remove(record)
+    db_delete(str(record.id))
     return {"deleted": trade_id}
 
 
@@ -134,13 +137,13 @@ async def trade_pdf(trade_id: str):
 @router.get("/reports/daily", summary="Daily summary report")
 async def daily_report(d: str = Query(..., description="YYYY-MM-DD")):
     report_date = _parse_date(d)
-    r = generate_daily_report(_records, report_date)
+    r = generate_daily_report(_records(), report_date)
     return _daily_dict(r)
 
 
 @router.get("/reports/daily/pdf", summary="Daily report as PDF")
 async def daily_pdf(d: str = Query(..., description="YYYY-MM-DD")):
-    r = generate_daily_report(_records, _parse_date(d))
+    r = generate_daily_report(_records(), _parse_date(d))
     pdf = export_daily_pdf(_daily_dict(r))
     return Response(pdf, media_type="application/pdf",
                     headers={"Content-Disposition": f"attachment; filename=daily_{d}.pdf"})
@@ -153,7 +156,7 @@ async def weekly_report(
     start: str = Query(..., description="Week start YYYY-MM-DD"),
     end: str = Query(..., description="Week end YYYY-MM-DD"),
 ):
-    r = generate_weekly_report(_records, _parse_date(start), _parse_date(end))
+    r = generate_weekly_report(_records(), _parse_date(start), _parse_date(end))
     return {
         "week_start": str(r.week_start), "week_end": str(r.week_end),
         "total_trades": r.total_trades, "win_rate": r.win_rate,
@@ -173,7 +176,7 @@ async def weekly_report(
 
 @router.get("/reports/monthly", summary="Monthly summary report")
 async def monthly_report(year: int, month: int = Query(..., ge=1, le=12)):
-    r = generate_monthly_report(_records, year, month)
+    r = generate_monthly_report(_records(), year, month)
     return {
         "year": r.year, "month": r.month,
         "total_trades": r.total_trades, "win_rate": r.win_rate,
@@ -191,7 +194,7 @@ async def monthly_report(year: int, month: int = Query(..., ge=1, le=12)):
 
 @router.get("/reports/monthly/pdf", summary="Monthly report as PDF")
 async def monthly_pdf(year: int, month: int = Query(..., ge=1, le=12)):
-    r = generate_monthly_report(_records, year, month)
+    r = generate_monthly_report(_records(), year, month)
     summary = {
         "year": r.year, "month": r.month,
         "total_trades": r.total_trades, "win_rate": r.win_rate,
@@ -210,7 +213,7 @@ async def monthly_pdf(year: int, month: int = Query(..., ge=1, le=12)):
 
 @router.get("/kpis", summary="Overall performance KPIs")
 async def kpis():
-    closed = [t for t in _records if t.net_pnl is not None]
+    closed = [t for t in _records() if t.net_pnl is not None]
     if not closed:
         return {"message": "No closed trades yet", "total_trades": 0}
 
@@ -223,7 +226,7 @@ async def kpis():
 
     return {
         "total_trades": len(closed),
-        "open_trades": sum(1 for t in _records if t.net_pnl is None),
+        "open_trades": sum(1 for t in _records() if t.net_pnl is None),
         "winning_trades": len(wins),
         "losing_trades": len(losses),
         "win_rate_pct": calculate_win_rate(len(wins), len(closed)),
@@ -246,7 +249,7 @@ async def kpis():
 
 @router.get("/export/csv", summary="Export all trades as CSV")
 async def export_csv():
-    reports = [generate_trade_report(t) for t in _records]
+    reports = [generate_trade_report(t) for t in _records()]
     data = export_trades_csv(reports)
     return Response(data, media_type="text/csv",
                     headers={"Content-Disposition": "attachment; filename=trades.csv"})
@@ -254,9 +257,9 @@ async def export_csv():
 
 @router.get("/export/excel", summary="Export trades + daily summary as Excel")
 async def export_excel():
-    reports = [generate_trade_report(t) for t in _records]
-    trade_dates = sorted(set(t.opened_at.date() for t in _records))
-    daily = [_daily_dict(generate_daily_report(_records, d)) for d in trade_dates]
+    reports = [generate_trade_report(t) for t in _records()]
+    trade_dates = sorted(set(t.opened_at.date() for t in _records()))
+    daily = [_daily_dict(generate_daily_report(_records(), d)) for d in trade_dates]
     data = export_trades_excel(reports, daily)
     return Response(
         data,
@@ -269,20 +272,20 @@ async def export_excel():
 
 @router.get("/charts/equity", summary="Equity curve PNG")
 async def chart_equity():
-    pnls = [t.net_pnl for t in _records if t.net_pnl is not None]
+    pnls = [t.net_pnl for t in _records() if t.net_pnl is not None]
     return Response(equity_curve_chart(calculate_equity_curve(pnls)), media_type="image/png")
 
 
 @router.get("/charts/drawdown", summary="Drawdown PNG")
 async def chart_drawdown():
-    pnls = [t.net_pnl for t in _records if t.net_pnl is not None]
+    pnls = [t.net_pnl for t in _records() if t.net_pnl is not None]
     return Response(drawdown_chart(calculate_equity_curve(pnls)), media_type="image/png")
 
 
 @router.get("/charts/winloss", summary="Win/Loss pie PNG")
 async def chart_winloss():
-    wins = sum(1 for t in _records if t.net_pnl is not None and t.net_pnl > 0)
-    losses = sum(1 for t in _records if t.net_pnl is not None and t.net_pnl <= 0)
+    wins = sum(1 for t in _records() if t.net_pnl is not None and t.net_pnl > 0)
+    losses = sum(1 for t in _records() if t.net_pnl is not None and t.net_pnl <= 0)
     return Response(win_loss_pie_chart(wins, losses), media_type="image/png")
 
 
@@ -290,7 +293,7 @@ async def chart_winloss():
 async def chart_daily_pnl():
     from collections import defaultdict
     daily: dict = defaultdict(list)
-    for t in _records:
+    for t in _records():
         if t.net_pnl is not None:
             daily[str(t.opened_at.date())].append(t.net_pnl)
     dates = sorted(daily)
@@ -302,7 +305,7 @@ async def chart_daily_pnl():
 async def chart_strategy():
     from collections import defaultdict
     groups: dict = defaultdict(list)
-    for t in _records:
+    for t in _records():
         if t.net_pnl is not None:
             groups[t.strategy].append(t.net_pnl)
     data = {s: {"net_pnl": round(sum(v), 4)} for s, v in groups.items()}
@@ -313,7 +316,7 @@ async def chart_strategy():
 async def chart_pairs():
     from collections import defaultdict
     groups: dict = defaultdict(list)
-    for t in _records:
+    for t in _records():
         if t.net_pnl is not None:
             groups[t.asset].append(t.net_pnl)
     data = {s: {"net_pnl": round(sum(v), 4)} for s, v in groups.items()}
@@ -324,7 +327,7 @@ async def chart_pairs():
 async def chart_hourly():
     from collections import defaultdict
     hourly: dict = defaultdict(list)
-    for t in _records:
+    for t in _records():
         if t.net_pnl is not None:
             hourly[str(t.opened_at.hour)].append(t.net_pnl)
     data = {h: {"net_pnl": round(sum(v), 4)} for h, v in hourly.items()}
@@ -333,7 +336,7 @@ async def chart_hourly():
 
 @router.get("/charts/rr", summary="R:R distribution histogram PNG")
 async def chart_rr():
-    vals = [t.risk_reward_ratio for t in _records if t.risk_reward_ratio]
+    vals = [t.risk_reward_ratio for t in _records() if t.risk_reward_ratio]
     return Response(rr_distribution_chart(vals), media_type="image/png")
 
 
@@ -341,7 +344,7 @@ async def chart_rr():
 
 @router.post("/notify/telegram/daily", summary="Send daily Telegram report")
 async def notify_tg_daily(d: str = Query(..., description="YYYY-MM-DD")):
-    r = generate_daily_report(_records, _parse_date(d))
+    r = generate_daily_report(_records(), _parse_date(d))
     sent = await send_telegram_report(format_daily_telegram(_daily_dict(r)))
     return {"sent": sent}
 
@@ -355,7 +358,7 @@ async def notify_tg_trade(trade_id: str):
 
 @router.post("/notify/email/daily", summary="Send daily email report with PDF attachment")
 async def notify_email_daily(d: str = Query(..., description="YYYY-MM-DD")):
-    r = generate_daily_report(_records, _parse_date(d))
+    r = generate_daily_report(_records(), _parse_date(d))
     summary = _daily_dict(r)
     sent = await send_email_report(
         subject=f"Daily Trading Report — {d}",
@@ -369,7 +372,7 @@ async def notify_email_daily(d: str = Query(..., description="YYYY-MM-DD")):
 # ─── Helpers ───────────────────────────────────────────────────────────────────
 
 def _find(trade_id: str) -> TradeRecord:
-    record = next((t for t in _records if str(t.id) == trade_id), None)
+    record = next((t for t in _records() if str(t.id) == trade_id), None)
     if not record:
         raise HTTPException(404, f"Trade {trade_id!r} not found")
     return record

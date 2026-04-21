@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from app.config.settings import get_settings
 from app.core.logger import setup_logging, logger
@@ -32,6 +32,11 @@ async def trading_error_handler(request: Request, exc: TradingSystemError):
     return JSONResponse(status_code=400, content={"error": str(exc)})
 
 
+@app.get("/dashboard", include_in_schema=False)
+async def dashboard():
+    return FileResponse("dashboard.html")
+
+
 @app.get("/health")
 async def health():
     return {"status": "ok", "env": settings.app_env}
@@ -40,8 +45,8 @@ async def health():
 @app.on_event("startup")
 async def startup():
     from app.analytics.scheduler import setup_analytics_scheduler
-    from app.api.routes.analytics import _records
-    setup_analytics_scheduler(lambda: _records)
+    from app.analytics.db import load_all_trades
+    setup_analytics_scheduler(load_all_trades)
     logger.info("app_started", env=settings.app_env, port=settings.app_port)
 
 

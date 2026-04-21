@@ -326,18 +326,28 @@ async function loadKPIs() {
   try {
     const r = await fetch(API + '/analytics/kpis');
     const d = await r.json();
-    if (d.message) return;
-    const pnl = d.total_net_pnl || 0;
-    document.getElementById('kpi-total').textContent = d.total_trades;
-    document.getElementById('kpi-wr').textContent = d.win_rate_pct + '%';
-    document.getElementById('kpi-wr').className = 'card-value ' + (d.win_rate_pct >= 50 ? 'green' : 'red');
-    document.getElementById('kpi-pnl').textContent = '$' + pnl.toFixed(2);
-    document.getElementById('kpi-pnl').className = 'card-value ' + (pnl >= 0 ? 'green' : 'red');
-    document.getElementById('kpi-pf').textContent = d.profit_factor ?? '—';
-    document.getElementById('kpi-rr').textContent = d.avg_rr ? '1:' + d.avg_rr : '—';
-    document.getElementById('kpi-dd').textContent = '$' + (d.max_drawdown || 0).toFixed(2);
-    document.getElementById('kpi-best').textContent = '$' + (d.best_trade_pnl || 0).toFixed(2);
-    document.getElementById('kpi-fees').textContent = '$' + (d.total_fees || 0).toFixed(2);
+    if (d.message) {
+      document.getElementById('kpi-total').textContent = '0';
+      document.getElementById('kpi-wr').textContent = '0%';
+      document.getElementById('kpi-pnl').textContent = '$0.00';
+      document.getElementById('kpi-pf').textContent = '0';
+      document.getElementById('kpi-rr').textContent = '—';
+      document.getElementById('kpi-dd').textContent = '$0.00';
+      document.getElementById('kpi-best').textContent = '$0.00';
+      document.getElementById('kpi-fees').textContent = '$0.00';
+    } else {
+      const pnl = d.total_net_pnl || 0;
+      document.getElementById('kpi-total').textContent = d.total_trades;
+      document.getElementById('kpi-wr').textContent = d.win_rate_pct + '%';
+      document.getElementById('kpi-wr').className = 'card-value ' + (d.win_rate_pct >= 50 ? 'green' : 'red');
+      document.getElementById('kpi-pnl').textContent = '$' + pnl.toFixed(2);
+      document.getElementById('kpi-pnl').className = 'card-value ' + (pnl >= 0 ? 'green' : 'red');
+      document.getElementById('kpi-pf').textContent = d.profit_factor ?? '—';
+      document.getElementById('kpi-rr').textContent = d.avg_rr ? '1:' + d.avg_rr : '—';
+      document.getElementById('kpi-dd').textContent = '$' + (d.max_drawdown || 0).toFixed(2);
+      document.getElementById('kpi-best').textContent = '$' + (d.best_trade_pnl || 0).toFixed(2);
+      document.getElementById('kpi-fees').textContent = '$' + (d.total_fees || 0).toFixed(2);
+    }
     loadDashboardCharts();
   } catch(e) { console.error(e); }
 }
