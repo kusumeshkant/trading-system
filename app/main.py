@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 from app.config.settings import get_settings
 from app.core.logger import setup_logging, logger
 from app.core.exceptions import TradingSystemError
@@ -18,6 +19,7 @@ app = FastAPI(
     redoc_url="/redoc",
 )
 
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 app.add_middleware(LoggingMiddleware)
 
 app.include_router(trading.router)
