@@ -1,6 +1,7 @@
 import asyncio
 from typing import Optional
-from binance import AsyncClient, BinanceAPIException
+from binance import AsyncClient
+from binance.exceptions import BinanceAPIException
 from tenacity import retry, stop_after_attempt, wait_exponential
 from app.config.settings import get_settings
 from app.core.exceptions import BrokerConnectionError, OrderExecutionError, InsufficientFundsError
