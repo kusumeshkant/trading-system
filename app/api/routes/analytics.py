@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, UploadFile, File
 from fastapi.responses import Response
 from pydantic import BaseModel, Field
 from typing import Optional, List
@@ -16,7 +16,7 @@ from app.analytics.calculator import (
 from app.analytics.reports.trade_report import generate_trade_report
 from app.analytics.reports.daily_report import generate_daily_report
 from app.analytics.reports.periodic_report import generate_weekly_report, generate_monthly_report
-from app.analytics.exporters.csv_exporter import export_trades_csv, export_daily_summaries_csv
+from app.analytics.exporters.csv_exporter import export_trades_csv
 from app.analytics.exporters.excel_exporter import export_trades_excel
 from app.analytics.exporters.pdf_exporter import export_trade_pdf, export_daily_pdf, export_monthly_pdf
 from app.analytics.dashboard.charts import (
@@ -24,17 +24,56 @@ from app.analytics.dashboard.charts import (
     win_loss_pie_chart, hourly_heatmap, rr_distribution_chart, pair_performance_chart,
 )
 from app.analytics.notifications.telegram_sender import (
-    send_telegram_report, format_daily_telegram, format_trade_closed_telegram, format_weekly_telegram,
+    send_telegram_report, format_daily_telegram, format_trade_closed_telegram,
 )
 from app.analytics.notifications.email_sender import send_email_report, build_daily_email_html
-
 from app.analytics.db import init_db, save_trade, delete_trade as db_delete, load_all_trades
-router = APIRouter(prefix="/analytics", tags=["analytics"])
+from app.analytics.services.binance_importer import parse_binance_csv
+from app.analytics.services.ai_insights import generate_insights
 
+router = APIRouter(prefix="/analytics", tags=["analytics"])
 init_db()
+
+
+# ─── Core helpers ──────────────────────────────────────────────────────────────
 
 def _records() -> List[TradeRecord]:
     return load_all_trades()
+
+
+def _filter(
+    records: List[TradeRecord],
+    from_date: Optional[str] = None,
+    to_date: Optional[str] = None,
+    asset: Optional[str] = None,
+    strategy: Optional[str] = None,
+) -> List[TradeRecord]:
+    if from_date:
+        fd = date.fromisoformat(from_date)
+        records = [t for t in records if t.opened_at.date() >= fd]
+    if to_date:
+        td = date.fromisoformat(to_date)
+        records = [t for t in records if t.opened_at.date() <= td]
+    if asset:
+        records = [t for t in records if t.asset.upper() == asset.upper()]
+    if strategy:
+        records = [t for t in records if t.strategy.lower() == strategy.lower()]
+    return records
+
+
+def _streaks(pnls: List[float]) -> dict:
+    cw = cl = mw = ml = 0
+    for p in pnls:
+        if p > 0:
+            cw += 1; cl = 0; mw = max(mw, cw)
+        else:
+            cl += 1; cw = 0; ml = max(ml, cl)
+    return {
+        "current_win_streak": cw,
+        "current_loss_streak": cl,
+        "max_win_streak": mw,
+        "max_loss_streak": ml,
+    }
 
 
 # ─── Schemas ───────────────────────────────────────────────────────────────────
@@ -97,13 +136,11 @@ async def list_trades(
     asset: Optional[str] = None,
     strategy: Optional[str] = None,
     mode: Optional[str] = None,
-    limit: int = Query(100, ge=1, le=1000),
+    from_date: Optional[str] = None,
+    to_date: Optional[str] = None,
+    limit: int = Query(500, ge=1, le=5000),
 ):
-    result = _records()
-    if asset:
-        result = [t for t in result if t.asset == asset]
-    if strategy:
-        result = [t for t in result if t.strategy == strategy]
+    result = _filter(_records(), from_date, to_date, asset, strategy)
     if mode:
         result = [t for t in result if t.mode == mode]
     return [asdict(generate_trade_report(t)) for t in result[-limit:]]
@@ -111,14 +148,13 @@ async def list_trades(
 
 @router.get("/trades/{trade_id}", summary="Get full report for one trade")
 async def get_trade(trade_id: str):
-    record = _find(trade_id)
-    return asdict(generate_trade_report(record))
+    return asdict(generate_trade_report(_find(trade_id)))
 
 
 @router.delete("/trades/{trade_id}", summary="Remove a trade record")
 async def remove_trade(trade_id: str):
-    record = _find(trade_id)
-    db_delete(str(record.id))
+    _find(trade_id)
+    db_delete(trade_id)
     return {"deleted": trade_id}
 
 
@@ -132,13 +168,59 @@ async def trade_pdf(trade_id: str):
                     headers={"Content-Disposition": f"attachment; filename=trade_{trade_id[:8]}.pdf"})
 
 
+# ─── Import ────────────────────────────────────────────────────────────────────
+
+@router.post("/import/binance", summary="Import trades from a Binance CSV export")
+async def import_binance(file: UploadFile = File(...)):
+    if not file.filename.lower().endswith(".csv"):
+        raise HTTPException(400, "File must be a .csv")
+    content = await file.read()
+    try:
+        text = content.decode("utf-8")
+    except UnicodeDecodeError:
+        text = content.decode("latin-1")
+
+    raw_records, errors = parse_binance_csv(text)
+    imported = 0
+    for r in raw_records:
+        if r.entry_price and r.exit_price and r.gross_pnl is None:
+            gross = calculate_gross_pnl(
+                r.entry_price, r.exit_price, r.quantity, r.trade_type.value
+            )
+            r.gross_pnl = round(gross, 6)
+            r.net_pnl = round(calculate_net_pnl(gross, r.fees_paid or 0, r.slippage or 0), 6)
+        if r.opened_at and r.closed_at and r.trade_duration_minutes is None:
+            r.trade_duration_minutes = round(
+                calculate_duration_minutes(r.opened_at, r.closed_at), 2
+            )
+        save_trade(r)
+        imported += 1
+
+    return {
+        "imported": imported,
+        "skipped": len(errors),
+        "errors": errors[:20],
+    }
+
+
+# ─── AI Insights ───────────────────────────────────────────────────────────────
+
+@router.get("/insights", summary="AI-powered pattern analysis and recommendations")
+async def insights(
+    from_date: Optional[str] = None,
+    to_date: Optional[str] = None,
+    asset: Optional[str] = None,
+    strategy: Optional[str] = None,
+):
+    records = _filter(_records(), from_date, to_date, asset, strategy)
+    return generate_insights(records)
+
+
 # ─── Daily Reports ─────────────────────────────────────────────────────────────
 
 @router.get("/reports/daily", summary="Daily summary report")
 async def daily_report(d: str = Query(..., description="YYYY-MM-DD")):
-    report_date = _parse_date(d)
-    r = generate_daily_report(_records(), report_date)
-    return _daily_dict(r)
+    return _daily_dict(generate_daily_report(_records(), _parse_date(d)))
 
 
 @router.get("/reports/daily/pdf", summary="Daily report as PDF")
@@ -211,9 +293,16 @@ async def monthly_pdf(year: int, month: int = Query(..., ge=1, le=12)):
 
 # ─── Overall KPIs ──────────────────────────────────────────────────────────────
 
-@router.get("/kpis", summary="Overall performance KPIs")
-async def kpis():
-    closed = [t for t in _records() if t.net_pnl is not None]
+@router.get("/kpis", summary="Overall performance KPIs (supports filters)")
+async def kpis(
+    from_date: Optional[str] = None,
+    to_date: Optional[str] = None,
+    asset: Optional[str] = None,
+    strategy: Optional[str] = None,
+):
+    all_records = _filter(_records(), from_date, to_date, asset, strategy)
+    closed = [t for t in all_records if t.net_pnl is not None]
+
     if not closed:
         return {"message": "No closed trades yet", "total_trades": 0}
 
@@ -224,9 +313,11 @@ async def kpis():
     gp = sum(t.net_pnl for t in wins)
     gl = sum(t.net_pnl for t in losses)
 
+    streaks = _streaks(net_pnls)
+
     return {
         "total_trades": len(closed),
-        "open_trades": sum(1 for t in _records() if t.net_pnl is None),
+        "open_trades": sum(1 for t in all_records if t.net_pnl is None),
         "winning_trades": len(wins),
         "losing_trades": len(losses),
         "win_rate_pct": calculate_win_rate(len(wins), len(closed)),
@@ -242,6 +333,7 @@ async def kpis():
         "sharpe_ratio": calculate_sharpe_ratio(net_pnls),
         "total_fees": round(sum(t.fees_paid for t in closed), 4),
         "total_slippage": round(sum(t.slippage for t in closed), 4),
+        **streaks,
     }
 
 
@@ -257,9 +349,10 @@ async def export_csv():
 
 @router.get("/export/excel", summary="Export trades + daily summary as Excel")
 async def export_excel():
-    reports = [generate_trade_report(t) for t in _records()]
-    trade_dates = sorted(set(t.opened_at.date() for t in _records()))
-    daily = [_daily_dict(generate_daily_report(_records(), d)) for d in trade_dates]
+    all_records = _records()
+    reports = [generate_trade_report(t) for t in all_records]
+    trade_dates = sorted(set(t.opened_at.date() for t in all_records))
+    daily = [_daily_dict(generate_daily_report(all_records, d)) for d in trade_dates]
     data = export_trades_excel(reports, daily)
     return Response(
         data,
@@ -268,32 +361,39 @@ async def export_excel():
     )
 
 
-# ─── Dashboard Charts ──────────────────────────────────────────────────────────
+# ─── Dashboard Charts (all support optional filters) ──────────────────────────
 
 @router.get("/charts/equity", summary="Equity curve PNG")
-async def chart_equity():
-    pnls = [t.net_pnl for t in _records() if t.net_pnl is not None]
+async def chart_equity(from_date: Optional[str] = None, to_date: Optional[str] = None,
+                       asset: Optional[str] = None, strategy: Optional[str] = None):
+    pnls = [t.net_pnl for t in _filter(_records(), from_date, to_date, asset, strategy)
+            if t.net_pnl is not None]
     return Response(equity_curve_chart(calculate_equity_curve(pnls)), media_type="image/png")
 
 
 @router.get("/charts/drawdown", summary="Drawdown PNG")
-async def chart_drawdown():
-    pnls = [t.net_pnl for t in _records() if t.net_pnl is not None]
+async def chart_drawdown(from_date: Optional[str] = None, to_date: Optional[str] = None,
+                         asset: Optional[str] = None, strategy: Optional[str] = None):
+    pnls = [t.net_pnl for t in _filter(_records(), from_date, to_date, asset, strategy)
+            if t.net_pnl is not None]
     return Response(drawdown_chart(calculate_equity_curve(pnls)), media_type="image/png")
 
 
 @router.get("/charts/winloss", summary="Win/Loss pie PNG")
-async def chart_winloss():
-    wins = sum(1 for t in _records() if t.net_pnl is not None and t.net_pnl > 0)
-    losses = sum(1 for t in _records() if t.net_pnl is not None and t.net_pnl <= 0)
+async def chart_winloss(from_date: Optional[str] = None, to_date: Optional[str] = None,
+                        asset: Optional[str] = None, strategy: Optional[str] = None):
+    filtered = _filter(_records(), from_date, to_date, asset, strategy)
+    wins = sum(1 for t in filtered if t.net_pnl is not None and t.net_pnl > 0)
+    losses = sum(1 for t in filtered if t.net_pnl is not None and t.net_pnl <= 0)
     return Response(win_loss_pie_chart(wins, losses), media_type="image/png")
 
 
 @router.get("/charts/daily-pnl", summary="Daily P&L bar PNG")
-async def chart_daily_pnl():
+async def chart_daily_pnl(from_date: Optional[str] = None, to_date: Optional[str] = None,
+                          asset: Optional[str] = None, strategy: Optional[str] = None):
     from collections import defaultdict
     daily: dict = defaultdict(list)
-    for t in _records():
+    for t in _filter(_records(), from_date, to_date, asset, strategy):
         if t.net_pnl is not None:
             daily[str(t.opened_at.date())].append(t.net_pnl)
     dates = sorted(daily)
@@ -302,10 +402,11 @@ async def chart_daily_pnl():
 
 
 @router.get("/charts/strategy", summary="Strategy performance bar PNG")
-async def chart_strategy():
+async def chart_strategy(from_date: Optional[str] = None, to_date: Optional[str] = None,
+                         asset: Optional[str] = None, strategy: Optional[str] = None):
     from collections import defaultdict
     groups: dict = defaultdict(list)
-    for t in _records():
+    for t in _filter(_records(), from_date, to_date, asset, strategy):
         if t.net_pnl is not None:
             groups[t.strategy].append(t.net_pnl)
     data = {s: {"net_pnl": round(sum(v), 4)} for s, v in groups.items()}
@@ -313,10 +414,11 @@ async def chart_strategy():
 
 
 @router.get("/charts/pairs", summary="Pair performance bar PNG")
-async def chart_pairs():
+async def chart_pairs(from_date: Optional[str] = None, to_date: Optional[str] = None,
+                      asset: Optional[str] = None, strategy: Optional[str] = None):
     from collections import defaultdict
     groups: dict = defaultdict(list)
-    for t in _records():
+    for t in _filter(_records(), from_date, to_date, asset, strategy):
         if t.net_pnl is not None:
             groups[t.asset].append(t.net_pnl)
     data = {s: {"net_pnl": round(sum(v), 4)} for s, v in groups.items()}
@@ -324,10 +426,11 @@ async def chart_pairs():
 
 
 @router.get("/charts/hourly", summary="Hourly P&L heatmap PNG")
-async def chart_hourly():
+async def chart_hourly(from_date: Optional[str] = None, to_date: Optional[str] = None,
+                       asset: Optional[str] = None, strategy: Optional[str] = None):
     from collections import defaultdict
     hourly: dict = defaultdict(list)
-    for t in _records():
+    for t in _filter(_records(), from_date, to_date, asset, strategy):
         if t.net_pnl is not None:
             hourly[str(t.opened_at.hour)].append(t.net_pnl)
     data = {h: {"net_pnl": round(sum(v), 4)} for h, v in hourly.items()}
@@ -335,8 +438,10 @@ async def chart_hourly():
 
 
 @router.get("/charts/rr", summary="R:R distribution histogram PNG")
-async def chart_rr():
-    vals = [t.risk_reward_ratio for t in _records() if t.risk_reward_ratio]
+async def chart_rr(from_date: Optional[str] = None, to_date: Optional[str] = None,
+                   asset: Optional[str] = None, strategy: Optional[str] = None):
+    vals = [t.risk_reward_ratio for t in _filter(_records(), from_date, to_date, asset, strategy)
+            if t.risk_reward_ratio]
     return Response(rr_distribution_chart(vals), media_type="image/png")
 
 

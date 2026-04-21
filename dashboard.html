@@ -1,585 +1,1480 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Trading System Dashboard</title>
 <style>
-  *{margin:0;padding:0;box-sizing:border-box;}
-  :root{
-    --bg:#0f0f1a;--card:#1a1a2e;--card2:#16213e;
-    --blue:#4a9eff;--green:#22c55e;--red:#ef4444;
-    --text:#e2e8f0;--muted:#94a3b8;--border:#2d3748;
-  }
-  body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text);display:flex;min-height:100vh;}
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#0a0a14;--card:#13132a;--card2:#0d0d1f;--card3:#1a1a35;
+  --blue:#4a9eff;--blue2:#2563eb;--green:#22c55e;--red:#ef4444;
+  --yellow:#f59e0b;--purple:#a855f7;
+  --text:#e2e8f0;--muted:#64748b;--muted2:#94a3b8;--border:#1e2a42;
+  --sidebar:240px;
+}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);display:flex;min-height:100vh;font-size:14px;}
 
-  /* Sidebar */
-  .sidebar{width:220px;background:var(--card);padding:24px 0;display:flex;flex-direction:column;position:fixed;height:100vh;border-right:1px solid var(--border);}
-  .logo{padding:0 20px 24px;font-size:16px;font-weight:700;color:var(--blue);border-bottom:1px solid var(--border);}
-  .logo span{color:var(--text);}
-  .nav{margin-top:16px;flex:1;}
-  .nav-item{display:flex;align-items:center;gap:10px;padding:11px 20px;cursor:pointer;color:var(--muted);font-size:13px;transition:.15s;border-left:3px solid transparent;}
-  .nav-item:hover,.nav-item.active{color:var(--text);background:rgba(74,158,255,.08);border-left-color:var(--blue);}
-  .nav-item .icon{font-size:16px;width:20px;text-align:center;}
+/* ── Sidebar ── */
+.sidebar{width:var(--sidebar);background:var(--card);padding:0;display:flex;flex-direction:column;position:fixed;height:100vh;border-right:1px solid var(--border);z-index:100;overflow-y:auto;}
+.logo{padding:20px;font-size:15px;font-weight:800;color:var(--blue);border-bottom:1px solid var(--border);letter-spacing:-.3px;display:flex;align-items:center;gap:8px;}
+.logo-icon{width:28px;height:28px;background:linear-gradient(135deg,var(--blue),var(--purple));border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px;}
+.nav{padding:10px 0;flex:1;}
+.nav-section{padding:12px 16px 4px;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-weight:600;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 16px;cursor:pointer;color:var(--muted2);font-size:13px;transition:.12s;border-left:3px solid transparent;user-select:none;}
+.nav-item:hover{color:var(--text);background:rgba(74,158,255,.06);}
+.nav-item.active{color:var(--blue);background:rgba(74,158,255,.1);border-left-color:var(--blue);font-weight:600;}
+.nav-item .ni{width:18px;text-align:center;font-size:15px;opacity:.8;}
+.nav-item .badge-new{background:var(--purple);color:#fff;font-size:9px;padding:1px 5px;border-radius:10px;font-weight:700;margin-left:auto;}
 
-  /* Main */
-  .main{margin-left:220px;flex:1;padding:28px;max-width:calc(100vw - 220px);}
-  .page{display:none;} .page.active{display:block;}
-  .page-title{font-size:22px;font-weight:700;margin-bottom:20px;color:var(--text);}
+/* ── Main ── */
+.main{margin-left:var(--sidebar);flex:1;min-height:100vh;overflow-x:hidden;}
+.page{display:none;padding:28px;max-width:1400px;} .page.active{display:block;}
+.page-title{font-size:20px;font-weight:700;margin-bottom:6px;}
+.page-sub{font-size:13px;color:var(--muted2);margin-bottom:22px;}
 
-  /* Cards */
-  .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px;margin-bottom:24px;}
-  .card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:18px;}
-  .card-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px;}
-  .card-value{font-size:22px;font-weight:700;}
-  .card-value.green{color:var(--green);}
-  .card-value.red{color:var(--red);}
-  .card-value.blue{color:var(--blue);}
+/* ── Filter Bar ── */
+.filter-bar{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 18px;margin-bottom:22px;display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;}
+.filter-bar .fg{display:flex;flex-direction:column;gap:5px;}
+.filter-bar label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:600;}
+.filter-bar input,.filter-bar select{background:var(--card2);border:1px solid var(--border);color:var(--text);padding:7px 11px;border-radius:6px;font-size:12px;outline:none;min-width:130px;}
+.filter-bar input:focus,.filter-bar select:focus{border-color:var(--blue);}
+.filter-tag{display:inline-flex;align-items:center;gap:5px;background:rgba(74,158,255,.15);color:var(--blue);padding:3px 8px;border-radius:12px;font-size:11px;font-weight:600;}
+.filter-active{font-size:11px;color:var(--muted2);margin-top:6px;}
 
-  /* Charts grid */
-  .charts-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(480px,1fr));gap:20px;}
-  .chart-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:18px;}
-  .chart-card h3{font-size:13px;color:var(--muted);margin-bottom:14px;text-transform:uppercase;letter-spacing:.5px;}
-  .chart-card img{width:100%;border-radius:6px;background:#111;}
-  .chart-card .loading{color:var(--muted);font-size:12px;padding:40px 0;text-align:center;}
+/* ── KPI Cards ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px;margin-bottom:24px;}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;position:relative;overflow:hidden;}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+.kpi.blue::before{background:var(--blue);}
+.kpi.green::before{background:var(--green);}
+.kpi.red::before{background:var(--red);}
+.kpi.yellow::before{background:var(--yellow);}
+.kpi.purple::before{background:var(--purple);}
+.kpi-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px;font-weight:600;}
+.kpi-value{font-size:22px;font-weight:800;line-height:1;}
+.kpi-value.c-blue{color:var(--blue);}
+.kpi-value.c-green{color:var(--green);}
+.kpi-value.c-red{color:var(--red);}
+.kpi-value.c-yellow{color:var(--yellow);}
+.kpi-value.c-purple{color:var(--purple);}
+.kpi-sub{font-size:11px;color:var(--muted);margin-top:5px;}
 
-  /* Form */
-  .form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;}
-  .form-group{display:flex;flex-direction:column;gap:6px;}
-  .form-group label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;}
-  .form-group input,.form-group select,.form-group textarea{
-    background:var(--card2);border:1px solid var(--border);color:var(--text);
-    padding:9px 12px;border-radius:6px;font-size:13px;outline:none;transition:.15s;
-  }
-  .form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--blue);}
-  .form-group textarea{resize:vertical;min-height:70px;}
-  .form-group select option{background:var(--card);}
-  .full{grid-column:1/-1;}
+/* ── Charts ── */
+.charts-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(460px,1fr));gap:18px;}
+.chart-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:18px;}
+.chart-card h3{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px;font-weight:600;}
+.chart-card img{width:100%;border-radius:6px;}
+.chart-loading{color:var(--muted);font-size:12px;padding:60px 0;text-align:center;}
 
-  /* Buttons */
-  .btn{padding:10px 20px;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:.15s;}
-  .btn-primary{background:var(--blue);color:#fff;}
-  .btn-primary:hover{background:#3a8eef;}
-  .btn-success{background:var(--green);color:#fff;}
-  .btn-success:hover{background:#16a34a;}
-  .btn-outline{background:transparent;color:var(--blue);border:1px solid var(--blue);}
-  .btn-outline:hover{background:rgba(74,158,255,.1);}
-  .btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px;}
+/* ── Form ── */
+.section{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:22px;margin-bottom:20px;}
+.section-title{font-size:14px;font-weight:700;margin-bottom:16px;color:var(--text);display:flex;align-items:center;gap:8px;}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;}
+.fg{display:flex;flex-direction:column;gap:5px;}
+.fg label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;font-weight:600;}
+.fg input,.fg select,.fg textarea{
+  background:var(--card2);border:1px solid var(--border);color:var(--text);
+  padding:9px 12px;border-radius:7px;font-size:13px;outline:none;transition:.12s;
+  font-family:inherit;
+}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--blue);background:rgba(74,158,255,.04);}
+.fg input.err,.fg select.err,.fg textarea.err{border-color:var(--red);}
+.fg textarea{resize:vertical;min-height:72px;}
+.fg select option{background:var(--card);}
+.field-err{font-size:11px;color:var(--red);margin-top:3px;}
+.full{grid-column:1/-1;}
+.half{grid-column:span 2;}
 
-  /* Table */
-  .table-wrap{overflow-x:auto;}
-  table{width:100%;border-collapse:collapse;font-size:13px;}
-  thead tr{background:var(--card2);}
-  th{padding:11px 14px;text-align:left;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);}
-  td{padding:11px 14px;border-bottom:1px solid var(--border);}
-  tr:hover td{background:rgba(255,255,255,.02);}
-  .badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;}
-  .badge-green{background:rgba(34,197,94,.15);color:var(--green);}
-  .badge-red{background:rgba(239,68,68,.15);color:var(--red);}
-  .badge-blue{background:rgba(74,158,255,.15);color:var(--blue);}
+/* ── Buttons ── */
+.btn{padding:9px 18px;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:.12s;display:inline-flex;align-items:center;gap:6px;}
+.btn-primary{background:var(--blue);color:#fff;}
+.btn-primary:hover{background:#3a8eef;}
+.btn-success{background:var(--green);color:#fff;}
+.btn-success:hover{background:#16a34a;}
+.btn-danger{background:var(--red);color:#fff;}
+.btn-danger:hover{background:#dc2626;}
+.btn-outline{background:transparent;color:var(--blue);border:1px solid var(--blue);}
+.btn-outline:hover{background:rgba(74,158,255,.1);}
+.btn-ghost{background:transparent;color:var(--muted2);border:1px solid var(--border);}
+.btn-ghost:hover{color:var(--text);border-color:var(--muted2);}
+.btn-sm{padding:5px 11px;font-size:12px;}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px;}
 
-  /* Report box */
-  .report-box{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:20px;}
-  .report-box h3{font-size:14px;font-weight:600;margin-bottom:14px;color:var(--blue);}
-  .report-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;}
-  .report-row:last-child{border:none;}
-  .report-row span:first-child{color:var(--muted);}
-  .rec-list{margin-top:8px;}
-  .rec-item{background:rgba(245,158,11,.07);border-left:3px solid #f59e0b;padding:8px 12px;border-radius:4px;font-size:12px;margin-bottom:6px;color:#fcd34d;}
+/* ── Table ── */
+.table-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+thead tr{background:var(--card2);}
+th{padding:10px 13px;text-align:left;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);white-space:nowrap;font-weight:700;}
+td{padding:10px 13px;border-bottom:1px solid rgba(30,42,66,.5);white-space:nowrap;}
+tbody tr:hover td{background:rgba(255,255,255,.02);}
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;}
+.b-green{background:rgba(34,197,94,.12);color:var(--green);}
+.b-red{background:rgba(239,68,68,.12);color:var(--red);}
+.b-blue{background:rgba(74,158,255,.12);color:var(--blue);}
+.b-yellow{background:rgba(245,158,11,.12);color:var(--yellow);}
+.b-purple{background:rgba(168,85,247,.12);color:var(--purple);}
 
-  /* Response box */
-  .response{background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:16px;font-size:12px;font-family:monospace;white-space:pre-wrap;max-height:400px;overflow:auto;margin-top:16px;display:none;}
-  .section{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:20px;}
-  .section-title{font-size:14px;font-weight:600;margin-bottom:16px;color:var(--text);}
+/* ── Report boxes ── */
+.report-box{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:16px;}
+.report-box h3{font-size:13px;font-weight:700;margin-bottom:14px;color:var(--blue);display:flex;align-items:center;gap:7px;}
+.report-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(30,42,66,.5);font-size:13px;}
+.report-row:last-child{border:none;}
+.report-row span:first-child{color:var(--muted2);}
+.rec-item{background:rgba(245,158,11,.07);border-left:3px solid var(--yellow);padding:9px 12px;border-radius:4px;font-size:12px;margin-bottom:6px;color:#fcd34d;line-height:1.5;}
 
-  /* Date picker row */
-  .date-row{display:flex;gap:12px;align-items:flex-end;margin-bottom:20px;flex-wrap:wrap;}
-  .date-row input{background:var(--card2);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:6px;font-size:13px;outline:none;}
-  .date-row input:focus{border-color:var(--blue);}
+/* ── Insight Cards ── */
+.insights-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;}
+.insight-card{border-radius:10px;padding:16px 18px;border:1px solid;}
+.insight-card.success{background:rgba(34,197,94,.07);border-color:rgba(34,197,94,.2);}
+.insight-card.danger{background:rgba(239,68,68,.07);border-color:rgba(239,68,68,.2);}
+.insight-card.warning{background:rgba(245,158,11,.07);border-color:rgba(245,158,11,.2);}
+.insight-card.info{background:rgba(74,158,255,.07);border-color:rgba(74,158,255,.2);}
+.ic-header{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.ic-icon{font-size:20px;line-height:1;}
+.ic-title{font-size:14px;font-weight:700;}
+.insight-card.success .ic-title{color:var(--green);}
+.insight-card.danger .ic-title{color:var(--red);}
+.insight-card.warning .ic-title{color:var(--yellow);}
+.insight-card.info .ic-title{color:var(--blue);}
+.ic-body{font-size:13px;color:var(--muted2);line-height:1.6;}
 
-  .toast{position:fixed;bottom:24px;right:24px;background:var(--green);color:#fff;padding:12px 20px;border-radius:8px;font-size:13px;font-weight:600;display:none;z-index:999;animation:fadeIn .3s;}
-  .toast.error{background:var(--red);}
-  @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+/* ── Import Area ── */
+.drop-zone{border:2px dashed var(--border);border-radius:10px;padding:48px;text-align:center;cursor:pointer;transition:.15s;background:var(--card2);}
+.drop-zone:hover,.drop-zone.drag-over{border-color:var(--blue);background:rgba(74,158,255,.05);}
+.drop-zone .dz-icon{font-size:42px;margin-bottom:12px;opacity:.5;}
+.drop-zone p{color:var(--muted2);font-size:13px;margin-bottom:4px;}
+.drop-zone small{color:var(--muted);font-size:12px;}
+.import-result{margin-top:16px;padding:14px 18px;border-radius:8px;font-size:13px;}
+.import-result.ok{background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.2);color:var(--green);}
+.import-result.fail{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:var(--red);}
+.csv-sample{background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:14px;font-family:monospace;font-size:11px;color:var(--muted2);overflow-x:auto;line-height:1.7;margin-top:10px;}
 
-  .spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:6px;}
-  @keyframes spin{to{transform:rotate(360deg)}}
+/* ── Help Page ── */
+.help-nav{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:28px;}
+.help-nav a{color:var(--blue);font-size:12px;text-decoration:none;padding:4px 10px;border:1px solid rgba(74,158,255,.3);border-radius:6px;transition:.12s;}
+.help-nav a:hover{background:rgba(74,158,255,.1);}
+.help-section{margin-bottom:36px;}
+.help-section h2{font-size:17px;font-weight:700;color:var(--text);margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;}
+.help-section h3{font-size:14px;font-weight:700;color:var(--blue);margin:16px 0 8px;}
+.help-section p{font-size:13px;color:var(--muted2);line-height:1.7;margin-bottom:10px;}
+.help-section ul{padding-left:18px;}
+.help-section li{font-size:13px;color:var(--muted2);line-height:1.7;margin-bottom:4px;}
+.help-section li strong{color:var(--text);}
+.formula-box{background:var(--card2);border:1px solid var(--border);border-left:3px solid var(--blue);border-radius:6px;padding:12px 16px;font-family:monospace;font-size:12px;color:var(--blue);margin:8px 0 12px;}
+.help-table{width:100%;border-collapse:collapse;font-size:12px;margin:10px 0;}
+.help-table th{background:var(--card2);padding:9px 12px;text-align:left;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);}
+.help-table td{padding:9px 12px;border-bottom:1px solid rgba(30,42,66,.5);color:var(--muted2);vertical-align:top;}
+.help-table td:first-child{color:var(--text);font-weight:600;white-space:nowrap;}
+.color-dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;}
 
-  ::-webkit-scrollbar{width:6px;height:6px;}
-  ::-webkit-scrollbar-track{background:var(--bg);}
-  ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+/* ── Date picker row ── */
+.date-row{display:flex;gap:12px;align-items:flex-end;margin-bottom:20px;flex-wrap:wrap;}
+.date-row .fg input,.date-row .fg select{background:var(--card2);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:7px;font-size:13px;outline:none;}
+.date-row .fg input:focus{border-color:var(--blue);}
+
+/* ── Toast ── */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--green);color:#fff;padding:11px 18px;border-radius:8px;font-size:13px;font-weight:600;display:none;z-index:9999;animation:slideUp .25s ease;max-width:320px;box-shadow:0 4px 20px rgba(0,0,0,.4);}
+.toast.err{background:var(--red);}
+.toast.warn{background:var(--yellow);color:#000;}
+@keyframes slideUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── Spinner ── */
+.spin{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:rot .6s linear infinite;vertical-align:middle;}
+@keyframes rot{to{transform:rotate(360deg)}}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+
+/* ── Responsive ── */
+@media(max-width:768px){
+  .sidebar{transform:translateX(-100%);}
+  .main{margin-left:0;}
+  .kpi-grid{grid-template-columns:repeat(2,1fr);}
+  .charts-grid{grid-template-columns:1fr;}
+  .form-grid{grid-template-columns:1fr;}
+  .filter-bar{flex-direction:column;align-items:stretch;}
+}
+
+/* ── Misc ── */
+.divider{height:1px;background:var(--border);margin:16px 0;}
+.empty{text-align:center;padding:50px 20px;color:var(--muted);}
+.empty .ei{font-size:36px;margin-bottom:12px;opacity:.4;}
+.tag{display:inline-block;padding:2px 7px;border-radius:4px;font-size:11px;background:rgba(168,85,247,.1);color:var(--purple);}
 </style>
 </head>
 <body>
 
-<!-- Sidebar -->
+<!-- ── Sidebar ── -->
 <aside class="sidebar">
-  <div class="logo">📈 Trading<span>System</span></div>
+  <div class="logo"><div class="logo-icon">📈</div>Trading<span style="color:var(--text)">System</span></div>
   <nav class="nav">
-    <div class="nav-item active" onclick="showPage('dashboard')"><span class="icon">🏠</span> Dashboard</div>
-    <div class="nav-item" onclick="showPage('log')"><span class="icon">➕</span> Log Trade</div>
-    <div class="nav-item" onclick="showPage('trades')"><span class="icon">📋</span> All Trades</div>
-    <div class="nav-item" onclick="showPage('daily')"><span class="icon">📅</span> Daily Report</div>
-    <div class="nav-item" onclick="showPage('weekly')"><span class="icon">📆</span> Weekly Report</div>
-    <div class="nav-item" onclick="showPage('monthly')"><span class="icon">🗓️</span> Monthly Report</div>
-    <div class="nav-item" onclick="showPage('charts')"><span class="icon">📊</span> Charts</div>
-    <div class="nav-item" onclick="showPage('export')"><span class="icon">⬇️</span> Export</div>
+    <div class="nav-section">Overview</div>
+    <div class="nav-item active" onclick="nav('dashboard',this)"><span class="ni">🏠</span>Dashboard</div>
+    <div class="nav-item" onclick="nav('insights',this)"><span class="ni">🤖</span>AI Insights<span class="badge-new">AI</span></div>
+
+    <div class="nav-section">Trades</div>
+    <div class="nav-item" onclick="nav('log',this)"><span class="ni">➕</span>Log Trade</div>
+    <div class="nav-item" onclick="nav('trades',this)"><span class="ni">📋</span>All Trades</div>
+    <div class="nav-item" onclick="nav('import',this)"><span class="ni">📥</span>Import CSV<span class="badge-new">NEW</span></div>
+
+    <div class="nav-section">Reports</div>
+    <div class="nav-item" onclick="nav('daily',this)"><span class="ni">📅</span>Daily</div>
+    <div class="nav-item" onclick="nav('weekly',this)"><span class="ni">📆</span>Weekly</div>
+    <div class="nav-item" onclick="nav('monthly',this)"><span class="ni">🗓️</span>Monthly</div>
+
+    <div class="nav-section">Analysis</div>
+    <div class="nav-item" onclick="nav('charts',this)"><span class="ni">📊</span>Charts</div>
+    <div class="nav-item" onclick="nav('export',this)"><span class="ni">⬇️</span>Export</div>
+
+    <div class="nav-section">Help</div>
+    <div class="nav-item" onclick="nav('help',this)"><span class="ni">❓</span>Documentation</div>
   </nav>
 </aside>
 
-<!-- Main -->
+<!-- ── Main ── -->
 <main class="main">
 
-  <!-- DASHBOARD -->
-  <div id="page-dashboard" class="page active">
-    <div class="page-title">Dashboard Overview</div>
-    <div id="kpi-cards" class="cards">
-      <div class="card"><div class="card-label">Total Trades</div><div class="card-value blue" id="kpi-total">—</div></div>
-      <div class="card"><div class="card-label">Win Rate</div><div class="card-value" id="kpi-wr">—</div></div>
-      <div class="card"><div class="card-label">Net P&L</div><div class="card-value" id="kpi-pnl">—</div></div>
-      <div class="card"><div class="card-label">Profit Factor</div><div class="card-value blue" id="kpi-pf">—</div></div>
-      <div class="card"><div class="card-label">Avg R:R</div><div class="card-value blue" id="kpi-rr">—</div></div>
-      <div class="card"><div class="card-label">Max Drawdown</div><div class="card-value red" id="kpi-dd">—</div></div>
-      <div class="card"><div class="card-label">Best Trade</div><div class="card-value green" id="kpi-best">—</div></div>
-      <div class="card"><div class="card-label">Total Fees</div><div class="card-value" id="kpi-fees">—</div></div>
-    </div>
-    <div class="charts-grid">
-      <div class="chart-card"><h3>Equity Curve</h3><div class="loading" id="eq-load">Loading...</div><img id="chart-eq" style="display:none" /></div>
-      <div class="chart-card"><h3>Win / Loss</h3><div class="loading" id="wl-load">Loading...</div><img id="chart-wl" style="display:none" /></div>
-    </div>
+<!-- ═══════════════════════════ DASHBOARD ═══════════════════════════ -->
+<div id="page-dashboard" class="page active">
+  <div class="page-title">Dashboard Overview</div>
+  <div class="page-sub">Your trading performance at a glance</div>
+
+  <!-- Filter Bar -->
+  <div class="filter-bar">
+    <div class="fg"><label>From</label><input type="date" id="f-from" onchange="markFilterDirty()"/></div>
+    <div class="fg"><label>To</label><input type="date" id="f-to" onchange="markFilterDirty()"/></div>
+    <div class="fg"><label>Asset / Pair</label><input id="f-asset-filter" placeholder="e.g. BTCUSDT" onkeydown="if(event.key==='Enter')applyFilters()"/></div>
+    <div class="fg"><label>Strategy</label><input id="f-strat-filter" placeholder="e.g. EMA Crossover" onkeydown="if(event.key==='Enter')applyFilters()"/></div>
+    <button class="btn btn-primary btn-sm" onclick="applyFilters()">Apply</button>
+    <button class="btn btn-ghost btn-sm" onclick="clearFilters()">Reset</button>
+    <div id="filter-active-label" style="display:none;" class="filter-active"></div>
   </div>
 
-  <!-- LOG TRADE -->
-  <div id="page-log" class="page">
-    <div class="page-title">Log a Trade</div>
-    <div class="section">
-      <div class="form-grid">
-        <div class="form-group"><label>Asset / Pair</label><input id="f-asset" value="BTCUSDT" /></div>
-        <div class="form-group"><label>Strategy</label><input id="f-strategy" value="EMA Crossover" /></div>
-        <div class="form-group"><label>Trade Type</label>
-          <select id="f-type"><option value="long">Long</option><option value="short">Short</option><option value="buy">Buy</option><option value="sell">Sell</option></select>
-        </div>
-        <div class="form-group"><label>Mode</label>
-          <select id="f-mode"><option value="paper">Paper</option><option value="live">Live</option><option value="backtest">Backtest</option></select>
-        </div>
-        <div class="form-group"><label>Opened At</label><input type="datetime-local" id="f-opened" /></div>
-        <div class="form-group"><label>Closed At</label><input type="datetime-local" id="f-closed" /></div>
-        <div class="form-group"><label>Entry Price</label><input type="number" id="f-entry" step="any" /></div>
-        <div class="form-group"><label>Exit Price</label><input type="number" id="f-exit" step="any" /></div>
-        <div class="form-group"><label>Stop Loss</label><input type="number" id="f-sl" step="any" /></div>
-        <div class="form-group"><label>Take Profit</label><input type="number" id="f-tp" step="any" /></div>
-        <div class="form-group"><label>Quantity</label><input type="number" id="f-qty" step="any" /></div>
-        <div class="form-group"><label>Fees Paid ($)</label><input type="number" id="f-fees" step="any" value="0" /></div>
-        <div class="form-group"><label>Slippage ($)</label><input type="number" id="f-slip" step="any" value="0" /></div>
-        <div class="form-group"><label>Broker</label><input id="f-broker" value="Binance" /></div>
-        <div class="form-group"><label>Market Condition</label>
-          <select id="f-mkt"><option value="">— select —</option><option value="trending_up">Trending Up</option><option value="trending_down">Trending Down</option><option value="ranging">Ranging</option><option value="high_volatility">High Volatility</option><option value="low_volatility">Low Volatility</option></select>
-        </div>
-        <div class="form-group"><label>Exit Reason</label>
-          <select id="f-exit-reason"><option value="">— select —</option><option value="take_profit">Take Profit</option><option value="stop_loss">Stop Loss</option><option value="manual">Manual</option><option value="trailing_stop">Trailing Stop</option><option value="time_exit">Time Exit</option><option value="signal_reversal">Signal Reversal</option></select>
-        </div>
-        <div class="form-group full"><label>Signal Reason</label><input id="f-signal" placeholder="e.g. EMA 9 crossed above EMA 21" /></div>
-        <div class="form-group full"><label>Notes</label><textarea id="f-notes" placeholder="Trade notes..."></textarea></div>
-        <div class="form-group"><label>Emotions</label><input id="f-emotions" placeholder="calm / anxious / confident" /></div>
-        <div class="form-group"><label>Mistakes</label><input id="f-mistakes" placeholder="Any mistakes?" /></div>
+  <!-- KPI Cards Row 1 -->
+  <div class="kpi-grid">
+    <div class="kpi blue"><div class="kpi-label">Total Trades</div><div class="kpi-value c-blue" id="k-total">—</div><div class="kpi-sub" id="k-open">— open</div></div>
+    <div class="kpi green"><div class="kpi-label">Win Rate</div><div class="kpi-value" id="k-wr">—</div><div class="kpi-sub" id="k-wl">— / —</div></div>
+    <div class="kpi"><div class="kpi-label">Net P&amp;L</div><div class="kpi-value" id="k-pnl">—</div><div class="kpi-sub" id="k-pnl-avg">avg —/trade</div></div>
+    <div class="kpi yellow"><div class="kpi-label">Profit Factor</div><div class="kpi-value c-yellow" id="k-pf">—</div><div class="kpi-sub">gross W÷L</div></div>
+    <div class="kpi blue"><div class="kpi-label">Avg R:R</div><div class="kpi-value c-blue" id="k-rr">—</div><div class="kpi-sub">risk/reward</div></div>
+    <div class="kpi red"><div class="kpi-label">Max Drawdown</div><div class="kpi-value c-red" id="k-dd">—</div><div class="kpi-sub">peak-to-trough</div></div>
+    <div class="kpi green"><div class="kpi-label">Avg Win</div><div class="kpi-value c-green" id="k-avgwin">—</div><div class="kpi-sub">per winning trade</div></div>
+    <div class="kpi red"><div class="kpi-label">Avg Loss</div><div class="kpi-value c-red" id="k-avgloss">—</div><div class="kpi-sub">per losing trade</div></div>
+    <div class="kpi green"><div class="kpi-label">Win Streak</div><div class="kpi-value c-green" id="k-wstreak">—</div><div class="kpi-sub" id="k-wstreak-max">max —</div></div>
+    <div class="kpi red"><div class="kpi-label">Loss Streak</div><div class="kpi-value c-red" id="k-lstreak">—</div><div class="kpi-sub" id="k-lstreak-max">max —</div></div>
+    <div class="kpi"><div class="kpi-label">Best Trade</div><div class="kpi-value c-green" id="k-best">—</div><div class="kpi-sub" id="k-worst">worst —</div></div>
+    <div class="kpi"><div class="kpi-label">Total Fees</div><div class="kpi-value" id="k-fees">—</div><div class="kpi-sub" id="k-slip">slip —</div></div>
+  </div>
+
+  <!-- Charts -->
+  <div class="charts-grid">
+    <div class="chart-card">
+      <h3>Equity Curve</h3>
+      <div class="chart-loading" id="eq-load">Loading...</div>
+      <img id="c-eq" style="display:none"/>
+    </div>
+    <div class="chart-card">
+      <h3>Win / Loss Distribution</h3>
+      <div class="chart-loading" id="wl-load">Loading...</div>
+      <img id="c-wl" style="display:none"/>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════ AI INSIGHTS ═══════════════════════════ -->
+<div id="page-insights" class="page">
+  <div class="page-title">AI Insights</div>
+  <div class="page-sub">Pattern analysis and actionable recommendations based on your trading history</div>
+  <div class="btn-row" style="margin-bottom:20px;margin-top:0;">
+    <button class="btn btn-primary" onclick="loadInsights()">🤖 Refresh Insights</button>
+  </div>
+  <div id="insights-container">
+    <div class="empty"><div class="ei">🤖</div><div>Click Refresh Insights to analyse your trades</div></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════ LOG TRADE ═══════════════════════════ -->
+<div id="page-log" class="page">
+  <div class="page-title">Log a Trade</div>
+  <div class="page-sub">Record every trade — closed or open position</div>
+  <div class="section">
+    <div class="section-title">📋 Trade Details</div>
+    <div class="form-grid">
+      <div class="fg">
+        <label>Asset / Pair <span style="color:var(--red)">*</span></label>
+        <input id="lf-asset" placeholder="BTCUSDT"/>
+        <span class="field-err" id="e-asset"></span>
       </div>
-      <div class="btn-row">
-        <button class="btn btn-primary" onclick="submitTrade()">Submit Trade</button>
-        <button class="btn btn-outline" onclick="clearForm()">Clear</button>
+      <div class="fg">
+        <label>Strategy <span style="color:var(--red)">*</span></label>
+        <input id="lf-strategy" placeholder="EMA Crossover"/>
+        <span class="field-err" id="e-strategy"></span>
       </div>
-      <pre class="response" id="trade-response"></pre>
-    </div>
-  </div>
-
-  <!-- ALL TRADES -->
-  <div id="page-trades" class="page">
-    <div class="page-title">All Trades</div>
-    <div class="section">
-      <div class="btn-row" style="margin-bottom:16px;margin-top:0;">
-        <button class="btn btn-primary" onclick="loadTrades()">🔄 Refresh</button>
-      </div>
-      <div class="table-wrap">
-        <table>
-          <thead><tr>
-            <th>Date</th><th>Asset</th><th>Strategy</th><th>Type</th>
-            <th>Entry</th><th>Exit</th><th>Net P&L</th><th>R:R</th>
-            <th>Duration</th><th>Exit Reason</th>
-          </tr></thead>
-          <tbody id="trades-body"><tr><td colspan="10" style="text-align:center;color:var(--muted);padding:30px;">Click Refresh to load trades</td></tr></tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <!-- DAILY REPORT -->
-  <div id="page-daily" class="page">
-    <div class="page-title">Daily Report</div>
-    <div class="date-row">
-      <div class="form-group"><label>Date</label><input type="date" id="daily-date" /></div>
-      <button class="btn btn-primary" onclick="loadDaily()">Generate Report</button>
-      <button class="btn btn-outline" onclick="downloadDailyPDF()">⬇ PDF</button>
-    </div>
-    <div id="daily-report-content"></div>
-  </div>
-
-  <!-- WEEKLY REPORT -->
-  <div id="page-weekly" class="page">
-    <div class="page-title">Weekly Report</div>
-    <div class="date-row">
-      <div class="form-group"><label>Week Start</label><input type="date" id="week-start" /></div>
-      <div class="form-group"><label>Week End</label><input type="date" id="week-end" /></div>
-      <button class="btn btn-primary" onclick="loadWeekly()">Generate Report</button>
-    </div>
-    <div id="weekly-report-content"></div>
-  </div>
-
-  <!-- MONTHLY REPORT -->
-  <div id="page-monthly" class="page">
-    <div class="page-title">Monthly Report</div>
-    <div class="date-row">
-      <div class="form-group"><label>Year</label><input type="number" id="m-year" value="2026" style="width:100px" /></div>
-      <div class="form-group"><label>Month</label>
-        <select id="m-month" style="background:var(--card2);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:6px;font-size:13px;">
-          <option value="1">January</option><option value="2">February</option><option value="3">March</option>
-          <option value="4" selected>April</option><option value="5">May</option><option value="6">June</option>
-          <option value="7">July</option><option value="8">August</option><option value="9">September</option>
-          <option value="10">October</option><option value="11">November</option><option value="12">December</option>
+      <div class="fg">
+        <label>Trade Type <span style="color:var(--red)">*</span></label>
+        <select id="lf-type">
+          <option value="long">Long (Buy &amp; hold for rise)</option>
+          <option value="short">Short (Sell &amp; buy back lower)</option>
+          <option value="buy">Buy (Spot)</option>
+          <option value="sell">Sell (Spot)</option>
         </select>
       </div>
-      <button class="btn btn-primary" onclick="loadMonthly()">Generate Report</button>
-      <button class="btn btn-outline" onclick="downloadMonthlyPDF()">⬇ PDF</button>
+      <div class="fg">
+        <label>Mode</label>
+        <select id="lf-mode">
+          <option value="paper">Paper (simulated)</option>
+          <option value="live">Live (real money)</option>
+          <option value="backtest">Backtest</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label>Opened At <span style="color:var(--red)">*</span></label>
+        <input type="datetime-local" id="lf-opened"/>
+        <span class="field-err" id="e-opened"></span>
+      </div>
+      <div class="fg">
+        <label>Closed At <span style="color:var(--muted)">leave blank if open</span></label>
+        <input type="datetime-local" id="lf-closed"/>
+        <span class="field-err" id="e-closed"></span>
+      </div>
+      <div class="fg">
+        <label>Entry Price <span style="color:var(--red)">*</span></label>
+        <input type="number" id="lf-entry" step="any" placeholder="60000"/>
+        <span class="field-err" id="e-entry"></span>
+      </div>
+      <div class="fg">
+        <label>Exit Price</label>
+        <input type="number" id="lf-exit" step="any" placeholder="62000"/>
+        <span class="field-err" id="e-exit"></span>
+      </div>
+      <div class="fg">
+        <label>Stop Loss</label>
+        <input type="number" id="lf-sl" step="any" placeholder="58000"/>
+      </div>
+      <div class="fg">
+        <label>Take Profit</label>
+        <input type="number" id="lf-tp" step="any" placeholder="64000"/>
+      </div>
+      <div class="fg">
+        <label>Quantity <span style="color:var(--red)">*</span></label>
+        <input type="number" id="lf-qty" step="any" placeholder="0.01"/>
+        <span class="field-err" id="e-qty"></span>
+      </div>
+      <div class="fg">
+        <label>Fees Paid ($)</label>
+        <input type="number" id="lf-fees" step="any" value="0"/>
+      </div>
+      <div class="fg">
+        <label>Slippage ($)</label>
+        <input type="number" id="lf-slip" step="any" value="0"/>
+      </div>
+      <div class="fg">
+        <label>Broker</label>
+        <input id="lf-broker" placeholder="Binance"/>
+      </div>
+      <div class="fg">
+        <label>Market Condition</label>
+        <select id="lf-mkt">
+          <option value="">— select —</option>
+          <option value="trending_up">Trending Up ↑</option>
+          <option value="trending_down">Trending Down ↓</option>
+          <option value="ranging">Ranging ↔</option>
+          <option value="high_volatility">High Volatility ⚡</option>
+          <option value="low_volatility">Low Volatility 😴</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label>Exit Reason</label>
+        <select id="lf-exitr">
+          <option value="">— select —</option>
+          <option value="take_profit">Take Profit 🎯</option>
+          <option value="stop_loss">Stop Loss 🛑</option>
+          <option value="manual">Manual Close</option>
+          <option value="trailing_stop">Trailing Stop</option>
+          <option value="time_exit">Time Exit</option>
+          <option value="signal_reversal">Signal Reversal</option>
+        </select>
+      </div>
+      <div class="fg full"><label>Signal Reason</label><input id="lf-signal" placeholder="e.g. EMA 9 crossed above EMA 21, RSI above 50"/></div>
     </div>
-    <div id="monthly-report-content"></div>
+
+    <div class="divider"></div>
+    <div class="section-title" style="margin-bottom:14px;">📔 Trade Journal</div>
+    <div class="form-grid">
+      <div class="fg full"><label>Notes</label><textarea id="lf-notes" placeholder="What happened? What was the market doing?"></textarea></div>
+      <div class="fg"><label>Emotions</label><input id="lf-emo" placeholder="calm / anxious / FOMO / confident"/></div>
+      <div class="fg"><label>Mistakes</label><input id="lf-mis" placeholder="Entered too early, moved SL..."/></div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="submitTrade()">Submit Trade</button>
+      <button class="btn btn-ghost" onclick="clearTradeForm()">Clear Form</button>
+    </div>
+    <div id="submit-result" style="margin-top:14px;display:none;"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════ ALL TRADES ═══════════════════════════ -->
+<div id="page-trades" class="page">
+  <div class="page-title">All Trades</div>
+  <div class="page-sub">Browse, filter, and manage your trade history</div>
+
+  <div class="filter-bar">
+    <div class="fg"><label>From</label><input type="date" id="tf-from"/></div>
+    <div class="fg"><label>To</label><input type="date" id="tf-to"/></div>
+    <div class="fg"><label>Asset</label><input id="tf-asset" placeholder="BTCUSDT"/></div>
+    <div class="fg"><label>Strategy</label><input id="tf-strat" placeholder="EMA Crossover"/></div>
+    <button class="btn btn-primary btn-sm" onclick="loadTrades()">Search</button>
+    <button class="btn btn-ghost btn-sm" onclick="clearTradesFilter()">Reset</button>
   </div>
 
-  <!-- CHARTS -->
-  <div id="page-charts" class="page">
-    <div class="page-title">Charts</div>
-    <div class="btn-row" style="margin-bottom:20px;margin-top:0;">
-      <button class="btn btn-primary" onclick="loadAllCharts()">🔄 Refresh All Charts</button>
+  <div class="section">
+    <div id="trades-count" style="font-size:12px;color:var(--muted);margin-bottom:12px;"></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Date</th><th>Asset</th><th>Strategy</th><th>Type</th>
+          <th>Entry</th><th>Exit</th><th>Net P&amp;L</th><th>R:R</th>
+          <th>Duration</th><th>Exit Reason</th><th>Mode</th><th>Action</th>
+        </tr></thead>
+        <tbody id="trades-body">
+          <tr><td colspan="12" class="empty">Click Search to load trades</td></tr>
+        </tbody>
+      </table>
     </div>
-    <div class="charts-grid">
-      <div class="chart-card"><h3>Equity Curve</h3><img id="c-equity" class="chart-img" /></div>
-      <div class="chart-card"><h3>Drawdown</h3><img id="c-drawdown" class="chart-img" /></div>
-      <div class="chart-card"><h3>Daily P&L</h3><img id="c-daily" class="chart-img" /></div>
-      <div class="chart-card"><h3>Win / Loss</h3><img id="c-wl" class="chart-img" /></div>
-      <div class="chart-card"><h3>Strategy Performance</h3><img id="c-strat" class="chart-img" /></div>
-      <div class="chart-card"><h3>Pair Performance</h3><img id="c-pairs" class="chart-img" /></div>
-      <div class="chart-card"><h3>Best Trading Hours</h3><img id="c-hourly" class="chart-img" /></div>
-      <div class="chart-card"><h3>R:R Distribution</h3><img id="c-rr" class="chart-img" /></div>
+    <div id="trades-pagination" style="margin-top:12px;display:flex;gap:8px;align-items:center;font-size:12px;color:var(--muted);"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════ DAILY REPORT ═══════════════════════════ -->
+<div id="page-daily" class="page">
+  <div class="page-title">Daily Report</div>
+  <div class="page-sub">Full breakdown for any trading day</div>
+  <div class="date-row">
+    <div class="fg"><label>Date</label><input type="date" id="daily-date"/></div>
+    <button class="btn btn-primary" onclick="loadDaily()">Generate Report</button>
+    <button class="btn btn-outline" onclick="downloadDailyPDF()">⬇ PDF</button>
+  </div>
+  <div id="daily-content"></div>
+</div>
+
+<!-- ═══════════════════════════ WEEKLY REPORT ═══════════════════════════ -->
+<div id="page-weekly" class="page">
+  <div class="page-title">Weekly Report</div>
+  <div class="page-sub">7-day performance summary with strategy breakdown</div>
+  <div class="date-row">
+    <div class="fg"><label>Week Start</label><input type="date" id="ws"/></div>
+    <div class="fg"><label>Week End</label><input type="date" id="we"/></div>
+    <button class="btn btn-primary" onclick="loadWeekly()">Generate Report</button>
+  </div>
+  <div id="weekly-content"></div>
+</div>
+
+<!-- ═══════════════════════════ MONTHLY REPORT ═══════════════════════════ -->
+<div id="page-monthly" class="page">
+  <div class="page-title">Monthly Report</div>
+  <div class="page-sub">30-day deep-dive with Sharpe ratio and loss patterns</div>
+  <div class="date-row">
+    <div class="fg"><label>Year</label><input type="number" id="m-yr" value="2026" style="width:90px"/></div>
+    <div class="fg"><label>Month</label>
+      <select id="m-mo">
+        <option>1</option><option>2</option><option>3</option><option selected>4</option>
+        <option>5</option><option>6</option><option>7</option><option>8</option>
+        <option>9</option><option>10</option><option>11</option><option>12</option>
+      </select>
+    </div>
+    <button class="btn btn-primary" onclick="loadMonthly()">Generate Report</button>
+    <button class="btn btn-outline" onclick="downloadMonthlyPDF()">⬇ PDF</button>
+  </div>
+  <div id="monthly-content"></div>
+</div>
+
+<!-- ═══════════════════════════ CHARTS ═══════════════════════════ -->
+<div id="page-charts" class="page">
+  <div class="page-title">Charts</div>
+  <div class="page-sub">Visual analysis of your trading performance</div>
+  <div class="filter-bar">
+    <div class="fg"><label>From</label><input type="date" id="cf-from"/></div>
+    <div class="fg"><label>To</label><input type="date" id="cf-to"/></div>
+    <div class="fg"><label>Asset</label><input id="cf-asset" placeholder="BTCUSDT"/></div>
+    <div class="fg"><label>Strategy</label><input id="cf-strat" placeholder="EMA Crossover"/></div>
+    <button class="btn btn-primary btn-sm" onclick="loadAllCharts()">🔄 Refresh Charts</button>
+    <button class="btn btn-ghost btn-sm" onclick="clearChartsFilter()">Reset</button>
+  </div>
+  <div class="charts-grid">
+    <div class="chart-card"><h3>Equity Curve</h3><div class="chart-loading" id="cc-eq-l">Waiting...</div><img id="cc-eq" style="display:none"/></div>
+    <div class="chart-card"><h3>Drawdown</h3><div class="chart-loading" id="cc-dd-l">Waiting...</div><img id="cc-dd" style="display:none"/></div>
+    <div class="chart-card"><h3>Daily P&amp;L</h3><div class="chart-loading" id="cc-dp-l">Waiting...</div><img id="cc-dp" style="display:none"/></div>
+    <div class="chart-card"><h3>Win / Loss</h3><div class="chart-loading" id="cc-wl-l">Waiting...</div><img id="cc-wl" style="display:none"/></div>
+    <div class="chart-card"><h3>Strategy Performance</h3><div class="chart-loading" id="cc-st-l">Waiting...</div><img id="cc-st" style="display:none"/></div>
+    <div class="chart-card"><h3>Pair Performance</h3><div class="chart-loading" id="cc-pa-l">Waiting...</div><img id="cc-pa" style="display:none"/></div>
+    <div class="chart-card"><h3>Best Trading Hours</h3><div class="chart-loading" id="cc-hr-l">Waiting...</div><img id="cc-hr" style="display:none"/></div>
+    <div class="chart-card"><h3>R:R Distribution</h3><div class="chart-loading" id="cc-rr-l">Waiting...</div><img id="cc-rr" style="display:none"/></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════ IMPORT ═══════════════════════════ -->
+<div id="page-import" class="page">
+  <div class="page-title">Import from Binance</div>
+  <div class="page-sub">Upload your Binance trade history CSV — spot or futures format</div>
+
+  <div class="section">
+    <div class="section-title">📥 Upload CSV File</div>
+    <div class="drop-zone" id="drop-zone" onclick="document.getElementById('csv-input').click()"
+         ondragover="dzOver(event)" ondragleave="dzOut(event)" ondrop="dzDrop(event)">
+      <div class="dz-icon">📄</div>
+      <p><strong>Click to browse</strong> or drag &amp; drop your CSV here</p>
+      <small>Supports: Spot Trade History, Futures Trade History</small>
+      <input type="file" id="csv-input" accept=".csv" style="display:none" onchange="handleFileSelect(event)"/>
+    </div>
+    <div id="import-result"></div>
+    <div class="btn-row" style="margin-top:16px;">
+      <button class="btn btn-primary" id="import-btn" onclick="importBinance()" style="display:none">
+        Import Trades
+      </button>
     </div>
   </div>
 
-  <!-- EXPORT -->
-  <div id="page-export" class="page">
-    <div class="page-title">Export Data</div>
-    <div class="cards" style="grid-template-columns:repeat(auto-fill,minmax(220px,1fr));">
-      <div class="card" style="text-align:center;cursor:pointer;" onclick="exportFile('csv')">
-        <div style="font-size:36px;margin-bottom:10px;">📄</div>
-        <div style="font-weight:700;margin-bottom:6px;">CSV Export</div>
-        <div style="font-size:12px;color:var(--muted);">All trades as CSV file</div>
-        <button class="btn btn-outline" style="margin-top:12px;width:100%;">Download CSV</button>
-      </div>
-      <div class="card" style="text-align:center;cursor:pointer;" onclick="exportFile('excel')">
-        <div style="font-size:36px;margin-bottom:10px;">📊</div>
-        <div style="font-weight:700;margin-bottom:6px;">Excel Export</div>
-        <div style="font-size:12px;color:var(--muted);">Trades + Daily summary sheets</div>
-        <button class="btn btn-outline" style="margin-top:12px;width:100%;">Download Excel</button>
-      </div>
-      <div class="card" style="text-align:center;cursor:pointer;" onclick="getDailyPDF()">
-        <div style="font-size:36px;margin-bottom:10px;">📋</div>
-        <div style="font-weight:700;margin-bottom:6px;">Daily PDF</div>
-        <div style="font-size:12px;color:var(--muted);">Today's report as PDF</div>
-        <button class="btn btn-outline" style="margin-top:12px;width:100%;">Download PDF</button>
-      </div>
+  <div class="section">
+    <div class="section-title">📋 Supported CSV Formats</div>
+    <div style="margin-bottom:14px;">
+      <strong style="color:var(--blue);font-size:13px;">Spot Trade History</strong>
+      <div class="csv-sample">Date(UTC),Pair,Side,Order Price,Order Amount,AvgTrading Price,Filled,Total,status
+2026-04-01 10:30:00,BTCUSDT,BUY,60000,0.01,60000,0.01,600,FILLED
+2026-04-03 14:20:00,BTCUSDT,SELL,62000,0.01,62000,0.01,620,FILLED</div>
+    </div>
+    <div>
+      <strong style="color:var(--blue);font-size:13px;">Futures Trade History</strong>
+      <div class="csv-sample">Time,Symbol,Side,Price,Quantity,Fee,Realized Profit
+2026-04-01 10:30:00,BTCUSDT,BUY,60000,0.01,0.5,0
+2026-04-03 14:20:00,BTCUSDT,SELL,62000,0.01,0.5,19</div>
+    </div>
+    <div style="margin-top:14px;">
+      <p style="font-size:12px;color:var(--muted2);">
+        <strong>How to export from Binance:</strong><br>
+        Spot: Orders → Trade History → Export<br>
+        Futures: Futures → Order → Trade History → Export
+      </p>
     </div>
   </div>
+</div>
+
+<!-- ═══════════════════════════ EXPORT ═══════════════════════════ -->
+<div id="page-export" class="page">
+  <div class="page-title">Export Data</div>
+  <div class="page-sub">Download your trades in different formats</div>
+  <div class="kpi-grid" style="grid-template-columns:repeat(auto-fill,minmax(200px,1fr));">
+    <div class="kpi" style="cursor:pointer;text-align:center;" onclick="exportFile('csv')">
+      <div style="font-size:36px;margin-bottom:10px;">📄</div>
+      <div style="font-weight:700;margin-bottom:6px;">CSV Export</div>
+      <div style="font-size:12px;color:var(--muted2);margin-bottom:12px;">All trades as CSV file</div>
+      <button class="btn btn-outline" style="width:100%;pointer-events:none;">Download CSV</button>
+    </div>
+    <div class="kpi" style="cursor:pointer;text-align:center;" onclick="exportFile('excel')">
+      <div style="font-size:36px;margin-bottom:10px;">📊</div>
+      <div style="font-weight:700;margin-bottom:6px;">Excel Export</div>
+      <div style="font-size:12px;color:var(--muted2);margin-bottom:12px;">Trades + daily summary sheets</div>
+      <button class="btn btn-outline" style="width:100%;pointer-events:none;">Download Excel</button>
+    </div>
+    <div class="kpi" style="cursor:pointer;text-align:center;" onclick="getDailyPDF()">
+      <div style="font-size:36px;margin-bottom:10px;">📋</div>
+      <div style="font-weight:700;margin-bottom:6px;">Today's PDF</div>
+      <div style="font-size:12px;color:var(--muted2);margin-bottom:12px;">Today's daily report as PDF</div>
+      <button class="btn btn-outline" style="width:100%;pointer-events:none;">Download PDF</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════ HELP ═══════════════════════════ -->
+<div id="page-help" class="page">
+  <div class="page-title">Documentation & Help</div>
+  <div class="page-sub">Complete guide for every feature, metric, formula, and field</div>
+
+  <div class="help-nav">
+    <a href="#h-kpis">KPI Cards</a>
+    <a href="#h-charts">Charts</a>
+    <a href="#h-formulas">Formulas</a>
+    <a href="#h-colors">Colors</a>
+    <a href="#h-filters">Filters</a>
+    <a href="#h-form">Trade Form</a>
+    <a href="#h-pnl">P&amp;L Explained</a>
+    <a href="#h-longshort">Long vs Short</a>
+    <a href="#h-terms">Fees &amp; Slippage</a>
+    <a href="#h-mistakes">Common Mistakes</a>
+    <a href="#h-glossary">Glossary</a>
+  </div>
+
+  <!-- KPI Cards -->
+  <div class="help-section" id="h-kpis">
+    <h2>📊 Dashboard KPI Cards</h2>
+    <p>The dashboard shows 12 key performance indicators. Here's what each one means:</p>
+    <table class="help-table">
+      <tr><th>Card</th><th>What it shows</th><th>Healthy range</th></tr>
+      <tr><td>Total Trades</td><td>Number of closed trades in the selected filter period</td><td>Any (more = more data)</td></tr>
+      <tr><td>Win Rate</td><td>Percentage of trades that closed with profit</td><td>≥ 50% is good; ≥ 60% is excellent</td></tr>
+      <tr><td>Net P&amp;L</td><td>Total profit/loss after fees and slippage</td><td>Positive = profitable system</td></tr>
+      <tr><td>Profit Factor</td><td>Total gross wins ÷ total gross losses</td><td>≥ 1.5 is solid; ≥ 2.0 is excellent</td></tr>
+      <tr><td>Avg R:R</td><td>Average risk-to-reward ratio across all trades</td><td>≥ 1.5 means rewards outweigh risks</td></tr>
+      <tr><td>Max Drawdown</td><td>Largest peak-to-trough equity drop in dollar terms</td><td>Lower is better; watch if &gt;10% of capital</td></tr>
+      <tr><td>Avg Win</td><td>Average dollar gain on winning trades</td><td>Should be larger than Avg Loss for profitability</td></tr>
+      <tr><td>Avg Loss</td><td>Average dollar loss on losing trades</td><td>Should be smaller than Avg Win</td></tr>
+      <tr><td>Win Streak</td><td>Current consecutive winning trades. Max shows all-time best</td><td>Track for momentum; don't over-size on streaks</td></tr>
+      <tr><td>Loss Streak</td><td>Current consecutive losing trades. Max shows all-time worst</td><td>3+ = take a break and review</td></tr>
+      <tr><td>Best / Worst</td><td>Highest and lowest single-trade net P&amp;L</td><td>Outliers reveal max risk and potential</td></tr>
+      <tr><td>Total Fees</td><td>Sum of all fees paid + slippage costs</td><td>Track — fees can erode a profitable edge</td></tr>
+    </table>
+  </div>
+
+  <!-- Charts -->
+  <div class="help-section" id="h-charts">
+    <h2>📈 Chart Meanings</h2>
+    <table class="help-table">
+      <tr><th>Chart</th><th>What it shows</th><th>How to read it</th></tr>
+      <tr><td>Equity Curve</td><td>Your cumulative account value over time</td><td>Smooth upward slope = consistent. Volatile or downward = review strategy.</td></tr>
+      <tr><td>Drawdown</td><td>How far equity fell from its peak at each point</td><td>Lower peaks = bigger losses from peak. Flat near zero = minimal drawdowns.</td></tr>
+      <tr><td>Daily P&amp;L</td><td>Net profit/loss for each trading day as bars</td><td>Green bars = profitable day. Red bars = losing day. Consistent green = good.</td></tr>
+      <tr><td>Win / Loss Pie</td><td>Proportion of winning vs losing trades</td><td>More green = higher win rate. Even with 40% wins you can be profitable with good R:R.</td></tr>
+      <tr><td>Strategy Performance</td><td>Net P&amp;L per strategy as a bar chart</td><td>Taller green bar = better strategy. Negative bars = strategies to pause/review.</td></tr>
+      <tr><td>Pair Performance</td><td>Net P&amp;L per trading pair (asset)</td><td>Shows which pairs you trade best. Focus on your edge pairs.</td></tr>
+      <tr><td>Best Trading Hours</td><td>Heatmap of P&amp;L by hour of day (UTC)</td><td>Bright cells = your profitable trading windows. Avoid dark/red hours.</td></tr>
+      <tr><td>R:R Distribution</td><td>Histogram of risk/reward ratios across trades</td><td>Values should cluster above 1.0. Many trades below 1.0 = poor risk management.</td></tr>
+    </table>
+  </div>
+
+  <!-- Formulas -->
+  <div class="help-section" id="h-formulas">
+    <h2>🔢 KPI Formulas (Plain Language)</h2>
+
+    <h3>Gross P&amp;L</h3>
+    <p>The raw profit/loss before any costs are deducted.</p>
+    <div class="formula-box">Long:  Gross P&L = (Exit Price − Entry Price) × Quantity
+Short: Gross P&L = (Entry Price − Exit Price) × Quantity</div>
+
+    <h3>Net P&amp;L</h3>
+    <p>The actual money you kept after paying fees and slippage.</p>
+    <div class="formula-box">Net P&L = Gross P&L − Fees Paid − Slippage</div>
+
+    <h3>Win Rate</h3>
+    <p>What percentage of your trades were profitable.</p>
+    <div class="formula-box">Win Rate = (Winning Trades ÷ Total Closed Trades) × 100</div>
+
+    <h3>Profit Factor</h3>
+    <p>How much you earn for every dollar you lose. A value above 1.0 means you're profitable overall.</p>
+    <div class="formula-box">Profit Factor = Total Gross Wins ÷ Total Gross Losses</div>
+
+    <h3>Risk/Reward Ratio (R:R)</h3>
+    <p>How much reward you target relative to your risk on each trade.</p>
+    <div class="formula-box">Long R:R  = (Take Profit − Entry) ÷ (Entry − Stop Loss)
+Short R:R = (Entry − Take Profit) ÷ (Stop Loss − Entry)</div>
+    <p>Example: Entry 100, SL 95, TP 115 → R:R = (115−100)÷(100−95) = 15÷5 = <strong>3.0</strong> (displayed as 1:3)</p>
+
+    <h3>Max Drawdown</h3>
+    <p>The largest dollar drop from a peak in your equity curve. Measures your worst losing period.</p>
+    <div class="formula-box">Max Drawdown = Max(Peak Equity − Current Equity) across all trades</div>
+
+    <h3>Sharpe Ratio</h3>
+    <p>Risk-adjusted return. How much return you earn per unit of risk. Above 1.0 is good; above 2.0 is excellent.</p>
+    <div class="formula-box">Sharpe = (Avg Return − Risk Free Rate) ÷ StdDev(Returns) × √252</div>
+
+    <h3>Trade Duration</h3>
+    <div class="formula-box">Duration (minutes) = (Closed At − Opened At) in total minutes</div>
+  </div>
+
+  <!-- Colors -->
+  <div class="help-section" id="h-colors">
+    <h2>🎨 Color Guide</h2>
+    <table class="help-table">
+      <tr><th>Color</th><th>Meaning</th><th>Where used</th></tr>
+      <tr><td><span class="color-dot" style="background:#22c55e"></span>Green</td><td>Positive / Profit / Win</td><td>Net P&amp;L when positive, Win Rate ≥50%, winning trades in table</td></tr>
+      <tr><td><span class="color-dot" style="background:#ef4444"></span>Red</td><td>Negative / Loss / Alert</td><td>Net P&amp;L when negative, losing trades, loss streaks, drawdown</td></tr>
+      <tr><td><span class="color-dot" style="background:#4a9eff"></span>Blue</td><td>Neutral / Info / Count</td><td>Total trades, R:R, asset badges, active navigation</td></tr>
+      <tr><td><span class="color-dot" style="background:#f59e0b"></span>Yellow</td><td>Caution / Recommendations</td><td>Profit Factor, recommendation cards, warnings in AI insights</td></tr>
+      <tr><td><span class="color-dot" style="background:#a855f7"></span>Purple</td><td>New Features / Tags</td><td>AI Insights badge, Import badge, trade tags</td></tr>
+      <tr><td><span class="color-dot" style="background:#94a3b8"></span>Gray</td><td>Neutral / Labels / Muted</td><td>Field labels, secondary information, "—" placeholders</td></tr>
+    </table>
+  </div>
+
+  <!-- Filters -->
+  <div class="help-section" id="h-filters">
+    <h2>🔍 How to Use Filters</h2>
+    <p>Filters let you narrow down which trades are included in KPIs, charts, and tables. They appear on the Dashboard, All Trades, and Charts pages.</p>
+    <table class="help-table">
+      <tr><th>Filter</th><th>What it does</th><th>Example</th></tr>
+      <tr><td>From</td><td>Show only trades opened on or after this date</td><td>2026-04-01</td></tr>
+      <tr><td>To</td><td>Show only trades opened on or before this date</td><td>2026-04-30</td></tr>
+      <tr><td>Asset / Pair</td><td>Show only trades for this symbol (case insensitive)</td><td>BTCUSDT</td></tr>
+      <tr><td>Strategy</td><td>Show only trades using this strategy name</td><td>EMA Crossover</td></tr>
+    </table>
+    <p>Click <strong>Apply</strong> to activate filters. Click <strong>Reset</strong> to show all-time data. Active filters are indicated by a label above the KPI cards.</p>
+    <p>All filters work together — e.g. "BTCUSDT from April 2026" will show only BTC trades in April.</p>
+  </div>
+
+  <!-- Trade Form -->
+  <div class="help-section" id="h-form">
+    <h2>📋 Trade Form Fields</h2>
+    <table class="help-table">
+      <tr><th>Field</th><th>Required</th><th>Description</th><th>Example</th></tr>
+      <tr><td>Asset / Pair</td><td>Yes</td><td>The trading pair or asset symbol</td><td>BTCUSDT, ETHUSDT, AAPL</td></tr>
+      <tr><td>Strategy</td><td>Yes</td><td>Name of the trading strategy you used</td><td>EMA Crossover, RSI Divergence</td></tr>
+      <tr><td>Trade Type</td><td>Yes</td><td>Long = profit when price rises; Short = profit when price falls</td><td>Long or Short</td></tr>
+      <tr><td>Mode</td><td>No</td><td>Paper = simulated money; Live = real money; Backtest = historical test</td><td>Paper</td></tr>
+      <tr><td>Opened At</td><td>Yes</td><td>Date and time when you entered the trade</td><td>2026-04-21 10:30</td></tr>
+      <tr><td>Closed At</td><td>No</td><td>Date and time when you exited. Leave blank for open positions.</td><td>2026-04-21 14:45</td></tr>
+      <tr><td>Entry Price</td><td>Yes</td><td>The price at which you opened the position</td><td>60000</td></tr>
+      <tr><td>Exit Price</td><td>No</td><td>The price at which you closed the position. Required for P&amp;L calculation.</td><td>62000</td></tr>
+      <tr><td>Stop Loss</td><td>No</td><td>Your planned stop loss price. Used to calculate R:R ratio.</td><td>58000</td></tr>
+      <tr><td>Take Profit</td><td>No</td><td>Your planned take profit target. Used to calculate R:R ratio.</td><td>65000</td></tr>
+      <tr><td>Quantity</td><td>Yes</td><td>How many units/coins/shares you traded</td><td>0.01 (for crypto), 100 (for stocks)</td></tr>
+      <tr><td>Fees Paid</td><td>No</td><td>Total fees paid in USD for this trade (both entry and exit combined)</td><td>1.20</td></tr>
+      <tr><td>Slippage</td><td>No</td><td>Difference between expected and actual fill price in USD</td><td>0.50</td></tr>
+      <tr><td>Market Condition</td><td>No</td><td>What the market was doing when you entered</td><td>Trending Up</td></tr>
+      <tr><td>Exit Reason</td><td>No</td><td>Why you closed the trade</td><td>Take Profit, Stop Loss</td></tr>
+      <tr><td>Signal Reason</td><td>No</td><td>What signal triggered your entry</td><td>EMA 9 crossed above EMA 21</td></tr>
+      <tr><td>Notes</td><td>No</td><td>Free-text journal entry about the trade</td><td>Market was choppy, nearly stopped out</td></tr>
+      <tr><td>Emotions</td><td>No</td><td>Your emotional state during the trade</td><td>calm, FOMO, anxious, confident</td></tr>
+      <tr><td>Mistakes</td><td>No</td><td>What you did wrong or would do differently</td><td>Entered before confirmation, moved SL</td></tr>
+    </table>
+  </div>
+
+  <!-- P&L -->
+  <div class="help-section" id="h-pnl">
+    <h2>💰 How P&amp;L is Calculated</h2>
+    <h3>Step 1: Gross P&amp;L</h3>
+    <p>The raw profit before costs. For a Long trade:</p>
+    <div class="formula-box">Gross P&L = (Exit Price − Entry Price) × Quantity</div>
+    <p>Example: Bought 0.1 BTC at $60,000, sold at $62,000:</p>
+    <div class="formula-box">Gross P&L = ($62,000 − $60,000) × 0.1 = $2,000 × 0.1 = $200</div>
+
+    <h3>Step 2: Net P&amp;L</h3>
+    <p>Subtract all costs from the gross profit:</p>
+    <div class="formula-box">Net P&L = Gross P&L − Fees − Slippage</div>
+    <p>Example: Gross $200, Fees $3, Slippage $0.50:</p>
+    <div class="formula-box">Net P&L = $200 − $3 − $0.50 = $196.50</div>
+
+    <h3>P&amp;L Percent</h3>
+    <div class="formula-box">P&L% = (Gross P&L ÷ (Entry Price × Quantity)) × 100</div>
+  </div>
+
+  <!-- Long vs Short -->
+  <div class="help-section" id="h-longshort">
+    <h2>↕️ Long vs Short Explained</h2>
+    <h3>Long Trade (Bullish)</h3>
+    <p>You <strong>buy</strong> an asset expecting its price to <strong>rise</strong>. You profit when exit price &gt; entry price.</p>
+    <ul>
+      <li>Buy 1 BTC at $60,000 → Price rises to $65,000 → Profit: $5,000</li>
+      <li>Buy 1 BTC at $60,000 → Price falls to $55,000 → Loss: -$5,000</li>
+    </ul>
+
+    <h3>Short Trade (Bearish)</h3>
+    <p>You <strong>sell</strong> an asset you don't own, expecting the price to <strong>fall</strong>. You profit when exit price &lt; entry price.</p>
+    <ul>
+      <li>Short 1 BTC at $60,000 → Price falls to $55,000 → Profit: $5,000</li>
+      <li>Short 1 BTC at $60,000 → Price rises to $65,000 → Loss: -$5,000</li>
+    </ul>
+
+    <h3>Stop Loss Direction</h3>
+    <p>For a <strong>Long</strong> trade: Stop Loss must be <em>below</em> entry price.</p>
+    <p>For a <strong>Short</strong> trade: Stop Loss must be <em>above</em> entry price.</p>
+  </div>
+
+  <!-- Fees & Slippage -->
+  <div class="help-section" id="h-terms">
+    <h2>💸 Fees, Slippage, Quantity &amp; R:R</h2>
+
+    <h3>Fees</h3>
+    <p>The cost charged by your broker/exchange for executing a trade. On Binance spot, the standard fee is 0.1% of trade value per side. Enter the <em>total</em> fees (entry + exit combined).</p>
+    <p>Example: 0.1 BTC at $60,000 = $6,000 trade. Binance fee = 0.1% × 2 sides = $12 total fees.</p>
+
+    <h3>Slippage</h3>
+    <p>The difference between the price you expected and the price you actually got, in dollars. Market orders often have slippage; limit orders usually don't.</p>
+    <p>Example: Placed a market buy at $60,000 but filled at $60,050 for 0.1 BTC → Slippage = $5.</p>
+
+    <h3>Quantity</h3>
+    <p>The number of units of the asset you traded. For crypto, this is typically in base currency (e.g., BTC). For stocks, it's the number of shares.</p>
+    <ul>
+      <li>Crypto: 0.01 BTC, 1.5 ETH, 100 SOL</li>
+      <li>Stocks: 10 shares of AAPL</li>
+      <li>Forex: 10000 units (0.1 lot)</li>
+    </ul>
+
+    <h3>Risk/Reward Ratio (R:R)</h3>
+    <p>Measures how much you stand to gain relative to what you risk. A 1:2 R:R means for every $1 you risk, you target $2 profit.</p>
+    <p>Even with a 40% win rate, a 1:3 R:R is profitable:</p>
+    <div class="formula-box">4 wins × $3 = $12 profit
+6 losses × $1 = $6 loss
+Net = +$6 on 10 trades</div>
+  </div>
+
+  <!-- Common Mistakes -->
+  <div class="help-section" id="h-mistakes">
+    <h2>⚠️ Common Mistakes When Entering Trades</h2>
+    <ul>
+      <li><strong>Exit Price for Long lower than Entry:</strong> On a Long trade, if Exit &lt; Entry, the P&amp;L will be negative. This is correct only if it was a losing trade.</li>
+      <li><strong>Forgetting to set Closed At:</strong> If you fill in Exit Price but leave Closed At blank, duration won't be calculated.</li>
+      <li><strong>Wrong Stop Loss direction:</strong> For a Long, SL must be below entry. For a Short, SL must be above entry. Entering wrong values makes R:R inaccurate.</li>
+      <li><strong>Entering fees per side instead of total:</strong> Enter the combined fees (entry + exit). If each side costs $1, enter $2.</li>
+      <li><strong>Wrong quantity:</strong> For crypto, enter the base asset quantity (BTC amount), not the USD value.</li>
+      <li><strong>Not recording open trades:</strong> Log open positions too — leave Exit Price and Closed At blank until you close them.</li>
+      <li><strong>Using wrong datetime format:</strong> The datetime field requires format: YYYY-MM-DD HH:MM. E.g. 2026-04-21 14:30.</li>
+    </ul>
+  </div>
+
+  <!-- Glossary -->
+  <div class="help-section" id="h-glossary">
+    <h2>📖 Glossary for Beginners</h2>
+    <table class="help-table">
+      <tr><th>Term</th><th>Definition</th></tr>
+      <tr><td>P&amp;L</td><td>Profit and Loss — how much money you made or lost</td></tr>
+      <tr><td>Gross P&amp;L</td><td>P&amp;L before deducting fees and slippage</td></tr>
+      <tr><td>Net P&amp;L</td><td>P&amp;L after all costs are deducted — your actual take-home</td></tr>
+      <tr><td>Equity Curve</td><td>A line showing how your account balance grew or shrank over time</td></tr>
+      <tr><td>Drawdown</td><td>How much your account dropped from its highest point</td></tr>
+      <tr><td>Win Rate</td><td>Percentage of trades that made a profit</td></tr>
+      <tr><td>Profit Factor</td><td>Total wins ÷ total losses. Above 1.0 = profitable system</td></tr>
+      <tr><td>Risk/Reward (R:R)</td><td>How much you risk vs how much you aim to earn per trade</td></tr>
+      <tr><td>Stop Loss (SL)</td><td>A price where your trade automatically closes to limit loss</td></tr>
+      <tr><td>Take Profit (TP)</td><td>A price where your trade automatically closes to lock in gain</td></tr>
+      <tr><td>Long</td><td>Buying an asset, expecting price to go up</td></tr>
+      <tr><td>Short</td><td>Selling first, expecting price to fall so you can buy back cheaper</td></tr>
+      <tr><td>Slippage</td><td>The difference between your expected fill price and actual fill price</td></tr>
+      <tr><td>Paper Trading</td><td>Simulated trading with fake money — for practice without risk</td></tr>
+      <tr><td>Backtest</td><td>Testing a strategy on historical data to see how it would have performed</td></tr>
+      <tr><td>Sharpe Ratio</td><td>Return per unit of risk. Higher = better risk-adjusted returns</td></tr>
+      <tr><td>Win Streak</td><td>Consecutive winning trades in a row</td></tr>
+      <tr><td>Loss Streak</td><td>Consecutive losing trades in a row — a warning sign to pause and review</td></tr>
+      <tr><td>Market Condition</td><td>What the overall market was doing: trending up/down, ranging, or volatile</td></tr>
+      <tr><td>Signal Reason</td><td>The technical or fundamental reason that triggered your trade entry</td></tr>
+      <tr><td>Edge</td><td>A statistical advantage — a system that makes money over many trades</td></tr>
+    </table>
+  </div>
+</div>
 
 </main>
-
 <div class="toast" id="toast"></div>
 
 <script>
 const API = 'http://localhost:8000';
 
-// ── Navigation ────────────────────────────────────────────────────────────────
-function showPage(name) {
+// ─── State ─────────────────────────────────────────────────────────────────────
+const filters = { from: '', to: '', asset: '', strategy: '' };
+let importFile = null;
+let allTrades = [];
+let tradesPage = 0;
+const PAGE_SIZE = 50;
+
+// ─── Navigation ────────────────────────────────────────────────────────────────
+function nav(name, el) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('page-' + name).classList.add('active');
-  event.currentTarget.classList.add('active');
-  if (name === 'dashboard') loadKPIs();
+  if (el) el.classList.add('active');
+  if (name === 'dashboard') { loadKPIs(); }
   if (name === 'trades') loadTrades();
   if (name === 'charts') loadAllCharts();
+  if (name === 'insights') loadInsights();
+  window.scrollTo(0, 0);
 }
 
-// ── Toast ─────────────────────────────────────────────────────────────────────
-function toast(msg, err=false) {
+// ─── Toast ─────────────────────────────────────────────────────────────────────
+function toast(msg, type = 'ok') {
   const t = document.getElementById('toast');
   t.textContent = msg;
-  t.className = 'toast' + (err ? ' error' : '');
+  t.className = 'toast' + (type === 'err' ? ' err' : type === 'warn' ? ' warn' : '');
   t.style.display = 'block';
-  setTimeout(() => t.style.display = 'none', 3000);
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.style.display = 'none', 3500);
 }
 
-// ── KPIs ──────────────────────────────────────────────────────────────────────
+// ─── Filter Management ─────────────────────────────────────────────────────────
+function markFilterDirty() { /* just live typing, apply on click */ }
+
+function applyFilters() {
+  filters.from = g('f-from').value;
+  filters.to = g('f-to').value;
+  filters.asset = g('f-asset-filter').value.trim();
+  filters.strategy = g('f-strat-filter').value.trim();
+  updateFilterLabel();
+  loadKPIs();
+  loadDashboardCharts();
+}
+
+function clearFilters() {
+  filters.from = filters.to = filters.asset = filters.strategy = '';
+  ['f-from','f-to','f-asset-filter','f-strat-filter'].forEach(id => g(id).value = '');
+  updateFilterLabel();
+  loadKPIs();
+  loadDashboardCharts();
+}
+
+function updateFilterLabel() {
+  const lbl = document.getElementById('filter-active-label');
+  const parts = [];
+  if (filters.from) parts.push('From: ' + filters.from);
+  if (filters.to) parts.push('To: ' + filters.to);
+  if (filters.asset) parts.push('Asset: ' + filters.asset);
+  if (filters.strategy) parts.push('Strategy: ' + filters.strategy);
+  if (parts.length) {
+    lbl.style.display = 'block';
+    lbl.innerHTML = 'Active filters: ' + parts.map(p => `<span class="filter-tag">${p}</span>`).join(' ');
+  } else {
+    lbl.style.display = 'none';
+  }
+}
+
+function filterQS(overrides = {}) {
+  const f = { ...filters, ...overrides };
+  const p = new URLSearchParams();
+  if (f.from) p.set('from_date', f.from);
+  if (f.to) p.set('to_date', f.to);
+  if (f.asset) p.set('asset', f.asset);
+  if (f.strategy) p.set('strategy', f.strategy);
+  return p.toString() ? '?' + p.toString() : '';
+}
+
+// ─── KPIs ──────────────────────────────────────────────────────────────────────
 async function loadKPIs() {
   try {
-    const r = await fetch(API + '/analytics/kpis');
+    const r = await fetch(API + '/analytics/kpis' + filterQS());
     const d = await r.json();
-    if (d.message) {
-      document.getElementById('kpi-total').textContent = '0';
-      document.getElementById('kpi-wr').textContent = '0%';
-      document.getElementById('kpi-pnl').textContent = '$0.00';
-      document.getElementById('kpi-pf').textContent = '0';
-      document.getElementById('kpi-rr').textContent = '—';
-      document.getElementById('kpi-dd').textContent = '$0.00';
-      document.getElementById('kpi-best').textContent = '$0.00';
-      document.getElementById('kpi-fees').textContent = '$0.00';
+
+    if (d.message || d.total_trades === 0) {
+      const zero = (prefix='$') => prefix + '0.00';
+      g('k-total').textContent = '0'; g('k-open').textContent = '0 open';
+      g('k-wr').textContent = '0%'; g('k-wl').textContent = '0 / 0';
+      g('k-pnl').textContent = '$0.00'; g('k-pnl-avg').textContent = 'avg $0/trade';
+      g('k-pf').textContent = '0'; g('k-rr').textContent = '—';
+      g('k-dd').textContent = '$0.00';
+      g('k-avgwin').textContent = '$0.00'; g('k-avgloss').textContent = '$0.00';
+      g('k-wstreak').textContent = '0'; g('k-wstreak-max').textContent = 'max 0';
+      g('k-lstreak').textContent = '0'; g('k-lstreak-max').textContent = 'max 0';
+      g('k-best').textContent = '$0.00'; g('k-worst').textContent = 'worst $0.00';
+      g('k-fees').textContent = '$0.00'; g('k-slip').textContent = 'slip $0.00';
     } else {
       const pnl = d.total_net_pnl || 0;
-      document.getElementById('kpi-total').textContent = d.total_trades;
-      document.getElementById('kpi-wr').textContent = d.win_rate_pct + '%';
-      document.getElementById('kpi-wr').className = 'card-value ' + (d.win_rate_pct >= 50 ? 'green' : 'red');
-      document.getElementById('kpi-pnl').textContent = '$' + pnl.toFixed(2);
-      document.getElementById('kpi-pnl').className = 'card-value ' + (pnl >= 0 ? 'green' : 'red');
-      document.getElementById('kpi-pf').textContent = d.profit_factor ?? '—';
-      document.getElementById('kpi-rr').textContent = d.avg_rr ? '1:' + d.avg_rr : '—';
-      document.getElementById('kpi-dd').textContent = '$' + (d.max_drawdown || 0).toFixed(2);
-      document.getElementById('kpi-best').textContent = '$' + (d.best_trade_pnl || 0).toFixed(2);
-      document.getElementById('kpi-fees').textContent = '$' + (d.total_fees || 0).toFixed(2);
+      const wr = d.win_rate_pct || 0;
+
+      g('k-total').textContent = d.total_trades;
+      g('k-open').textContent = (d.open_trades || 0) + ' open';
+      g('k-wr').textContent = wr + '%';
+      g('k-wr').className = 'kpi-value ' + (wr >= 50 ? 'c-green' : 'c-red');
+      g('k-wl').textContent = d.winning_trades + ' W / ' + d.losing_trades + ' L';
+      g('k-pnl').textContent = fmtMoney(pnl);
+      g('k-pnl').className = 'kpi-value ' + (pnl >= 0 ? 'c-green' : 'c-red');
+      g('k-pnl-avg').textContent = 'avg ' + fmtMoney(d.avg_net_pnl_per_trade) + '/trade';
+      const pf = d.profit_factor;
+      g('k-pf').textContent = pf === Infinity ? '∞' : (pf || 0).toFixed(2);
+      g('k-pf').className = 'kpi-value ' + (pf >= 1.5 ? 'c-green' : pf >= 1 ? 'c-yellow' : 'c-red');
+      g('k-rr').textContent = d.avg_rr ? '1:' + d.avg_rr : '—';
+      g('k-dd').textContent = '$' + (d.max_drawdown || 0).toFixed(2);
+      g('k-avgwin').textContent = fmtMoney(d.avg_win || 0);
+      g('k-avgloss').textContent = fmtMoney(d.avg_loss || 0);
+      g('k-wstreak').textContent = d.current_win_streak || 0;
+      g('k-wstreak-max').textContent = 'max ' + (d.max_win_streak || 0);
+      g('k-lstreak').textContent = d.current_loss_streak || 0;
+      g('k-lstreak-max').textContent = 'max ' + (d.max_loss_streak || 0);
+      g('k-best').textContent = fmtMoney(d.best_trade_pnl || 0);
+      g('k-worst').textContent = 'worst ' + fmtMoney(d.worst_trade_pnl || 0);
+      g('k-fees').textContent = '$' + (d.total_fees || 0).toFixed(2);
+      g('k-slip').textContent = 'slip $' + (d.total_slippage || 0).toFixed(2);
     }
     loadDashboardCharts();
   } catch(e) { console.error(e); }
 }
 
 function loadDashboardCharts() {
-  const ts = Date.now();
-  const eq = document.getElementById('chart-eq');
-  eq.src = API + '/analytics/charts/equity?' + ts;
-  eq.style.display = 'block';
-  document.getElementById('eq-load').style.display = 'none';
-  const wl = document.getElementById('chart-wl');
-  wl.src = API + '/analytics/charts/winloss?' + ts;
-  wl.style.display = 'block';
-  document.getElementById('wl-load').style.display = 'none';
+  const qs = filterQS() || '?';
+  const ts = '&_t=' + Date.now();
+  const eq = g('c-eq');
+  eq.onload = () => { g('eq-load').style.display='none'; eq.style.display='block'; };
+  eq.src = API + '/analytics/charts/equity' + qs + (qs==='?' ? '' : '&') + '_t=' + Date.now();
+  const wl = g('c-wl');
+  wl.onload = () => { g('wl-load').style.display='none'; wl.style.display='block'; };
+  wl.src = API + '/analytics/charts/winloss' + qs + (qs==='?' ? '' : '&') + '_t=' + Date.now();
 }
 
-// ── Submit Trade ──────────────────────────────────────────────────────────────
+// ─── Trade Form & Validation ──────────────────────────────────────────────────
+function validateTradeForm() {
+  clearFieldErrors();
+  const errors = {};
+
+  const asset = g('lf-asset').value.trim();
+  if (!asset) errors['lf-asset'] = 'Asset is required (e.g. BTCUSDT)';
+
+  const strat = g('lf-strategy').value.trim();
+  if (!strat) errors['lf-strategy'] = 'Strategy name is required';
+
+  const opened = g('lf-opened').value;
+  if (!opened) errors['lf-opened'] = 'Opened At is required';
+
+  const entry = parseFloat(g('lf-entry').value);
+  if (!entry || entry <= 0) errors['lf-entry'] = 'Entry price must be greater than 0';
+
+  const qty = parseFloat(g('lf-qty').value);
+  if (!qty || qty <= 0) errors['lf-qty'] = 'Quantity must be greater than 0';
+
+  const exitVal = g('lf-exit').value;
+  const closedVal = g('lf-closed').value;
+  if (exitVal && !closedVal) errors['lf-closed'] = 'Closed At is required when Exit Price is provided';
+  if (closedVal && !exitVal) errors['lf-exit'] = 'Exit Price is required when Closed At is provided';
+  if (exitVal && parseFloat(exitVal) <= 0) errors['lf-exit'] = 'Exit price must be greater than 0';
+
+  const tradeType = g('lf-type').value;
+  const sl = parseFloat(g('lf-sl').value);
+  if (sl && entry) {
+    if ((tradeType === 'long' || tradeType === 'buy') && sl >= entry) {
+      errors['lf-sl'] = 'Stop Loss must be below Entry Price for a Long trade';
+    }
+    if ((tradeType === 'short' || tradeType === 'sell') && sl <= entry) {
+      errors['lf-sl'] = 'Stop Loss must be above Entry Price for a Short trade';
+    }
+  }
+
+  if (closedVal && opened && new Date(closedVal) <= new Date(opened)) {
+    errors['lf-closed'] = 'Closed At must be after Opened At';
+  }
+
+  Object.entries(errors).forEach(([id, msg]) => setFieldErr(id, msg));
+  return Object.keys(errors).length === 0;
+}
+
+function setFieldErr(inputId, msg) {
+  const el = g(inputId);
+  if (el) el.classList.add('err');
+  const errEl = document.getElementById('e-' + inputId.replace('lf-',''));
+  if (errEl) errEl.textContent = msg;
+}
+
+function clearFieldErrors() {
+  document.querySelectorAll('#page-log .fg input, #page-log .fg select, #page-log .fg textarea')
+    .forEach(el => el.classList.remove('err'));
+  document.querySelectorAll('#page-log .field-err').forEach(el => el.textContent = '');
+}
+
 async function submitTrade() {
+  if (!validateTradeForm()) {
+    toast('Please fix the highlighted errors', 'err');
+    return;
+  }
+  const btn = event.currentTarget;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin"></span> Submitting...';
+
   const body = {
-    asset: v('f-asset'), strategy: v('f-strategy'),
-    trade_type: v('f-type'), mode: v('f-mode'),
-    opened_at: v('f-opened').replace('T', 'T') || null,
-    closed_at: v('f-closed') || null,
-    entry_price: parseFloat(v('f-entry')) || 0,
-    exit_price: parseFloat(v('f-exit')) || null,
-    stop_loss: parseFloat(v('f-sl')) || null,
-    take_profit: parseFloat(v('f-tp')) || null,
-    quantity: parseFloat(v('f-qty')) || 0,
-    fees_paid: parseFloat(v('f-fees')) || 0,
-    slippage: parseFloat(v('f-slip')) || 0,
-    broker: v('f-broker') || null,
-    market_condition: v('f-mkt') || null,
-    exit_reason: v('f-exit-reason') || null,
-    signal_reason: v('f-signal') || null,
-    notes: v('f-notes') || null,
-    emotions: v('f-emotions') || null,
-    mistakes: v('f-mistakes') || null,
+    asset: g('lf-asset').value.trim().toUpperCase(),
+    strategy: g('lf-strategy').value.trim(),
+    trade_type: g('lf-type').value,
+    mode: g('lf-mode').value,
+    opened_at: g('lf-opened').value,
+    closed_at: g('lf-closed').value || null,
+    entry_price: parseFloat(g('lf-entry').value),
+    exit_price: g('lf-exit').value ? parseFloat(g('lf-exit').value) : null,
+    stop_loss: g('lf-sl').value ? parseFloat(g('lf-sl').value) : null,
+    take_profit: g('lf-tp').value ? parseFloat(g('lf-tp').value) : null,
+    quantity: parseFloat(g('lf-qty').value),
+    fees_paid: parseFloat(g('lf-fees').value) || 0,
+    slippage: parseFloat(g('lf-slip').value) || 0,
+    broker: g('lf-broker').value || null,
+    market_condition: g('lf-mkt').value || null,
+    exit_reason: g('lf-exitr').value || null,
+    signal_reason: g('lf-signal').value || null,
+    notes: g('lf-notes').value || null,
+    emotions: g('lf-emo').value || null,
+    mistakes: g('lf-mis').value || null,
   };
-  if (!body.opened_at) { toast('Opened At is required', true); return; }
+
   try {
     const r = await fetch(API + '/analytics/trades', {
       method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body)
     });
     const d = await r.json();
-    const el = document.getElementById('trade-response');
-    el.style.display = 'block';
-    el.textContent = JSON.stringify(d, null, 2);
-    toast('Trade recorded successfully!');
-  } catch(e) { toast('Error: ' + e.message, true); }
+    if (!r.ok) throw new Error(d.detail || JSON.stringify(d));
+
+    const pnl = d.net_pnl;
+    const pnlStr = pnl !== null ? fmtMoney(pnl) : 'open position';
+    const rr = d.risk_reward_ratio ? '1:' + d.risk_reward_ratio : '—';
+
+    const result = g('submit-result');
+    result.style.display = 'block';
+    result.innerHTML = `
+      <div style="background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);border-radius:8px;padding:14px 18px;">
+        <div style="color:var(--green);font-weight:700;margin-bottom:8px;">✅ Trade recorded successfully!</div>
+        <div style="display:flex;gap:24px;flex-wrap:wrap;font-size:13px;color:var(--muted2);">
+          <span>P&amp;L: <strong style="color:${pnl>=0?'var(--green)':'var(--red)'}">${pnlStr}</strong></span>
+          <span>R:R: <strong style="color:var(--blue)">${rr}</strong></span>
+          <span>Duration: <strong>${d.trade_duration || 'open'}</strong></span>
+          <span>ID: <code style="font-size:11px;color:var(--muted)">${d.trade_id?.slice(0,8) || '—'}</code></span>
+        </div>
+      </div>`;
+    toast('Trade recorded! P&L: ' + pnlStr);
+    clearTradeForm();
+  } catch(e) {
+    toast('Error: ' + e.message, 'err');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = 'Submit Trade';
+  }
 }
 
-function v(id) { return document.getElementById(id).value; }
-function clearForm() {
-  ['f-asset','f-strategy','f-opened','f-closed','f-entry','f-exit','f-sl','f-tp',
-   'f-qty','f-broker','f-signal','f-notes','f-emotions','f-mistakes'].forEach(id => {
-    document.getElementById(id).value = '';
-  });
-  document.getElementById('f-fees').value = '0';
-  document.getElementById('f-slip').value = '0';
-  document.getElementById('trade-response').style.display = 'none';
+function clearTradeForm() {
+  const ids = ['lf-asset','lf-strategy','lf-opened','lf-closed','lf-entry','lf-exit',
+               'lf-sl','lf-tp','lf-qty','lf-broker','lf-signal','lf-notes','lf-emo','lf-mis'];
+  ids.forEach(id => { const el = g(id); if (el) el.value = ''; });
+  g('lf-fees').value = '0';
+  g('lf-slip').value = '0';
+  g('lf-type').value = 'long';
+  g('lf-mode').value = 'paper';
+  g('lf-mkt').value = '';
+  g('lf-exitr').value = '';
+  clearFieldErrors();
+  const r = g('submit-result');
+  if (r) r.style.display = 'none';
+  const now = new Date().toISOString().slice(0,16);
+  g('lf-opened').value = now;
 }
 
-// ── Trades Table ──────────────────────────────────────────────────────────────
+// ─── All Trades Table ─────────────────────────────────────────────────────────
 async function loadTrades() {
+  const from = g('tf-from').value;
+  const to = g('tf-to').value;
+  const asset = g('tf-asset').value.trim();
+  const strat = g('tf-strat').value.trim();
+  const qs = new URLSearchParams();
+  if (from) qs.set('from_date', from);
+  if (to) qs.set('to_date', to);
+  if (asset) qs.set('asset', asset);
+  if (strat) qs.set('strategy', strat);
+  qs.set('limit', '500');
+
   try {
-    const r = await fetch(API + '/analytics/trades');
-    const trades = await r.json();
-    const tbody = document.getElementById('trades-body');
-    if (!trades.length) {
-      tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--muted);padding:30px;">No trades recorded yet</td></tr>';
-      return;
-    }
-    tbody.innerHTML = trades.map(t => {
-      const pnl = t.net_pnl;
-      const pnlClass = pnl > 0 ? 'green' : pnl < 0 ? 'red' : '';
-      const pnlStr = pnl !== null ? (pnl > 0 ? '+' : '') + '$' + pnl.toFixed(2) : '—';
-      return `<tr>
-        <td>${t.datetime?.slice(0,16) || '—'}</td>
-        <td><span class="badge badge-blue">${t.asset}</span></td>
-        <td>${t.strategy}</td>
-        <td><span class="badge ${t.trade_type==='LONG'||t.trade_type==='BUY'?'badge-green':'badge-red'}">${t.trade_type}</span></td>
-        <td>$${(t.entry_price||0).toLocaleString()}</td>
-        <td>${t.exit_price ? '$'+t.exit_price.toLocaleString() : '—'}</td>
-        <td style="color:var(--${pnlClass||'text'});font-weight:600;">${pnlStr}</td>
-        <td>${t.risk_reward_ratio ? '1:'+t.risk_reward_ratio : '—'}</td>
-        <td>${t.trade_duration || '—'}</td>
-        <td>${t.exit_reason ? '<span class="badge badge-blue">'+t.exit_reason+'</span>' : '—'}</td>
-      </tr>`;
-    }).join('');
-  } catch(e) { toast('Failed to load trades', true); }
+    const r = await fetch(API + '/analytics/trades?' + qs.toString());
+    allTrades = await r.json();
+    tradesPage = 0;
+    renderTradesPage();
+  } catch(e) { toast('Failed to load trades', 'err'); }
 }
 
-// ── Daily Report ──────────────────────────────────────────────────────────────
+function renderTradesPage() {
+  const tbody = g('trades-body');
+  const count = g('trades-count');
+  const pag = g('trades-pagination');
+
+  if (!allTrades.length) {
+    tbody.innerHTML = '<tr><td colspan="12" class="empty"><div class="ei">📋</div>No trades found</td></tr>';
+    count.textContent = '';
+    pag.innerHTML = '';
+    return;
+  }
+
+  const start = tradesPage * PAGE_SIZE;
+  const page = allTrades.slice(start, start + PAGE_SIZE);
+  count.textContent = `Showing ${start+1}–${Math.min(start+page.length, allTrades.length)} of ${allTrades.length} trades`;
+
+  tbody.innerHTML = page.map(t => {
+    const pnl = t.net_pnl;
+    const pnlColor = pnl > 0 ? 'var(--green)' : pnl < 0 ? 'var(--red)' : 'var(--muted2)';
+    const pnlStr = pnl !== null ? fmtMoney(pnl) : '<span style="color:var(--muted)">open</span>';
+    const ttype = (t.trade_type || '').toUpperCase();
+    const isLong = ttype === 'LONG' || ttype === 'BUY';
+    const modeColor = t.mode === 'live' ? 'b-green' : t.mode === 'backtest' ? 'b-purple' : 'b-blue';
+    return `<tr>
+      <td style="color:var(--muted2)">${fmtDate(t.datetime)}</td>
+      <td><span class="badge b-blue">${t.asset || '—'}</span></td>
+      <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis">${t.strategy || '—'}</td>
+      <td><span class="badge ${isLong?'b-green':'b-red'}">${ttype}</span></td>
+      <td>$${(t.entry_price||0).toLocaleString()}</td>
+      <td>${t.exit_price ? '$'+t.exit_price.toLocaleString() : '<span style="color:var(--muted)">—</span>'}</td>
+      <td style="font-weight:700;color:${pnlColor}">${pnlStr}</td>
+      <td>${t.risk_reward_ratio ? '1:'+t.risk_reward_ratio : '—'}</td>
+      <td style="color:var(--muted2)">${t.trade_duration || '—'}</td>
+      <td>${t.exit_reason ? '<span class="badge b-yellow">'+fmtEnum(t.exit_reason)+'</span>' : '—'}</td>
+      <td><span class="badge ${modeColor}">${t.mode||'paper'}</span></td>
+      <td><button class="btn btn-danger btn-sm" onclick="deleteTrade('${t.trade_id}')">🗑</button></td>
+    </tr>`;
+  }).join('');
+
+  const totalPages = Math.ceil(allTrades.length / PAGE_SIZE);
+  if (totalPages > 1) {
+    pag.innerHTML = `
+      <button class="btn btn-ghost btn-sm" onclick="tradesPage=Math.max(0,tradesPage-1);renderTradesPage()" ${tradesPage===0?'disabled':''}>← Prev</button>
+      <span>Page ${tradesPage+1} of ${totalPages}</span>
+      <button class="btn btn-ghost btn-sm" onclick="tradesPage=Math.min(${totalPages-1},tradesPage+1);renderTradesPage()" ${tradesPage===totalPages-1?'disabled':''}>Next →</button>
+    `;
+  } else {
+    pag.innerHTML = '';
+  }
+}
+
+async function deleteTrade(id) {
+  if (!id || !confirm('Delete this trade? This cannot be undone.')) return;
+  try {
+    const r = await fetch(API + '/analytics/trades/' + id, { method: 'DELETE' });
+    if (!r.ok) throw new Error('Delete failed');
+    toast('Trade deleted');
+    loadTrades();
+  } catch(e) { toast('Delete failed: ' + e.message, 'err'); }
+}
+
+function clearTradesFilter() {
+  ['tf-from','tf-to','tf-asset','tf-strat'].forEach(id => g(id).value = '');
+  loadTrades();
+}
+
+// ─── Daily Report ─────────────────────────────────────────────────────────────
 async function loadDaily() {
-  const d = document.getElementById('daily-date').value;
-  if (!d) { toast('Select a date', true); return; }
+  const d = g('daily-date').value;
+  if (!d) { toast('Select a date', 'err'); return; }
   try {
     const r = await fetch(API + '/analytics/reports/daily?d=' + d);
     const data = await r.json();
-    renderDailyReport(data, 'daily-report-content');
-  } catch(e) { toast('Error loading report', true); }
+    if (data.detail) { toast(data.detail, 'err'); return; }
+    renderDaily(data);
+  } catch(e) { toast('Error loading report', 'err'); }
 }
 
-function renderDailyReport(d, containerId) {
+function renderDaily(d) {
   const pnl = d.net_pnl || 0;
-  const pnlColor = pnl >= 0 ? 'var(--green)' : 'var(--red)';
+  const pc = pnl >= 0 ? 'var(--green)' : 'var(--red)';
   const recs = (d.recommendations || []).map(r => `<div class="rec-item">💡 ${r}</div>`).join('');
-  document.getElementById(containerId).innerHTML = `
+  g('daily-content').innerHTML = `
     <div class="report-box">
-      <h3>📅 Daily Summary — ${d.date}</h3>
-      ${row('Total Trades', d.total_trades)}
-      ${row('Wins / Losses', d.winning_trades + ' / ' + d.losing_trades)}
-      ${row('Win Rate', d.win_rate + '%')}
-      ${row('Net P&L', '<span style="color:'+pnlColor+';font-weight:700;">$'+(pnl>0?'+':'')+pnl.toFixed(4)+'</span>')}
-      ${row('Gross Profit', '$'+d.gross_profit.toFixed(4))}
-      ${row('Gross Loss', '$'+d.gross_loss.toFixed(4))}
-      ${row('Fees Paid', '$'+d.fees_paid.toFixed(4))}
-      ${row('Max Drawdown', '$'+d.max_drawdown.toFixed(4))}
-      ${row('Avg Win', '$'+d.avg_win.toFixed(4))}
-      ${row('Avg Loss', '$'+d.avg_loss.toFixed(4))}
-      ${row('Avg R:R', '1:'+d.avg_rr)}
-      ${row('Profit Factor', d.profit_factor)}
-      ${row('Mistakes Found', d.mistakes_count)}
+      <h3>📅 ${d.date}</h3>
+      ${rr('Total Trades', d.total_trades)}
+      ${rr('Wins / Losses', d.winning_trades + ' W / ' + d.losing_trades + ' L')}
+      ${rr('Win Rate', d.win_rate + '%')}
+      ${rr('Net P&L', `<span style="color:${pc};font-weight:700">${fmtMoney(pnl)}</span>`)}
+      ${rr('Gross Profit', '$' + d.gross_profit.toFixed(2))}
+      ${rr('Gross Loss', '$' + Math.abs(d.gross_loss).toFixed(2))}
+      ${rr('Fees Paid', '$' + d.fees_paid.toFixed(2))}
+      ${rr('Max Drawdown', '$' + d.max_drawdown.toFixed(2))}
+      ${rr('Avg Win', '$' + d.avg_win.toFixed(2))}
+      ${rr('Avg Loss', '$' + Math.abs(d.avg_loss).toFixed(2))}
+      ${rr('Avg R:R', '1:' + d.avg_rr)}
+      ${rr('Profit Factor', d.profit_factor)}
+      ${rr('Mistakes Logged', d.mistakes_count)}
     </div>
-    ${recs ? '<div class="report-box"><h3>💡 Recommendations</h3><div class="rec-list">'+recs+'</div></div>' : ''}
-  `;
-}
-
-function row(label, value) {
-  return `<div class="report-row"><span>${label}</span><span>${value}</span></div>`;
+    ${recs ? '<div class="report-box"><h3>💡 Recommendations</h3>' + recs + '</div>' : ''}`;
 }
 
 function downloadDailyPDF() {
-  const d = document.getElementById('daily-date').value;
-  if (!d) { toast('Select a date first', true); return; }
+  const d = g('daily-date').value;
+  if (!d) { toast('Select a date first', 'err'); return; }
   window.open(API + '/analytics/reports/daily/pdf?d=' + d, '_blank');
 }
 
-// ── Weekly Report ─────────────────────────────────────────────────────────────
+// ─── Weekly Report ────────────────────────────────────────────────────────────
 async function loadWeekly() {
-  const s = document.getElementById('week-start').value;
-  const e = document.getElementById('week-end').value;
-  if (!s || !e) { toast('Select start and end dates', true); return; }
+  const s = g('ws').value, e = g('we').value;
+  if (!s || !e) { toast('Select start and end dates', 'err'); return; }
   try {
     const r = await fetch(API + '/analytics/reports/weekly?start=' + s + '&end=' + e);
     const d = await r.json();
     const strats = d.strategy_breakdown ? Object.entries(d.strategy_breakdown).map(([k,v]) =>
-      `<tr><td>${k}</td><td>${v.trades}</td><td>${v.win_rate}%</td><td>$${v.net_pnl}</td><td>1:${v.avg_rr}</td></tr>`
+      `<tr><td>${k}</td><td>${v.trades}</td><td>${v.win_rate}%</td><td style="color:${v.net_pnl>=0?'var(--green)':'var(--red)'}">${fmtMoney(v.net_pnl)}</td><td>1:${v.avg_rr}</td></tr>`
     ).join('') : '';
-    document.getElementById('weekly-report-content').innerHTML = `
+    g('weekly-content').innerHTML = `
       <div class="report-box">
-        <h3>📆 Weekly Summary — ${d.week_start} to ${d.week_end}</h3>
-        ${row('Total Trades', d.total_trades)}
-        ${row('Win Rate', d.win_rate + '%')}
-        ${row('Net P&L', '$' + d.net_pnl)}
-        ${row('Avg R:R', '1:' + d.avg_rr)}
-        ${row('Max Drawdown', '$' + d.max_drawdown)}
-        ${row('Profit Factor', d.profit_factor)}
-        ${row('Max Win Streak', d.max_consecutive_wins)}
-        ${row('Max Loss Streak', d.max_consecutive_losses)}
+        <h3>📆 ${d.week_start} → ${d.week_end}</h3>
+        ${rr('Total Trades', d.total_trades)}
+        ${rr('Win Rate', d.win_rate + '%')}
+        ${rr('Net P&L', fmtMoney(d.net_pnl))}
+        ${rr('Avg R:R', '1:' + d.avg_rr)}
+        ${rr('Max Drawdown', '$' + d.max_drawdown)}
+        ${rr('Profit Factor', d.profit_factor)}
+        ${rr('Max Win Streak', d.max_consecutive_wins)}
+        ${rr('Max Loss Streak', d.max_consecutive_losses)}
       </div>
-      ${strats ? `<div class="report-box"><h3>Strategy Breakdown</h3>
-        <div class="table-wrap"><table><thead><tr><th>Strategy</th><th>Trades</th><th>Win Rate</th><th>Net P&L</th><th>Avg R:R</th></tr></thead>
+      ${strats ? `<div class="report-box"><h3>📊 Strategy Breakdown</h3>
+        <div class="table-wrap"><table>
+        <thead><tr><th>Strategy</th><th>Trades</th><th>Win Rate</th><th>Net P&L</th><th>Avg R:R</th></tr></thead>
         <tbody>${strats}</tbody></table></div></div>` : ''}
-      ${(d.improvement_suggestions||[]).length ? `<div class="report-box"><h3>💡 Suggestions</h3><div class="rec-list">${d.improvement_suggestions.map(r=>'<div class="rec-item">💡 '+r+'</div>').join('')}</div></div>` : ''}
-    `;
-  } catch(e) { toast('Error loading report', true); }
+      ${(d.improvement_suggestions||[]).length ? `<div class="report-box"><h3>💡 Suggestions</h3>${d.improvement_suggestions.map(r=>'<div class="rec-item">💡 '+r+'</div>').join('')}</div>` : ''}`;
+  } catch(e) { toast('Error loading report', 'err'); }
 }
 
-// ── Monthly Report ────────────────────────────────────────────────────────────
+// ─── Monthly Report ───────────────────────────────────────────────────────────
 async function loadMonthly() {
-  const yr = document.getElementById('m-year').value;
-  const mo = document.getElementById('m-month').value;
+  const yr = g('m-yr').value, mo = g('m-mo').value;
   try {
     const r = await fetch(API + '/analytics/reports/monthly?year=' + yr + '&month=' + mo);
     const d = await r.json();
-    document.getElementById('monthly-report-content').innerHTML = `
+    g('monthly-content').innerHTML = `
       <div class="report-box">
-        <h3>🗓️ Monthly Summary — ${yr} / ${mo}</h3>
-        ${row('Total Trades', d.total_trades)}
-        ${row('Win Rate', d.win_rate + '%')}
-        ${row('Net P&L', '$' + d.net_pnl)}
-        ${row('Avg R:R', '1:' + d.avg_rr)}
-        ${row('Max Drawdown', '$' + d.max_drawdown)}
-        ${row('Profit Factor', d.profit_factor)}
-        ${row('Sharpe Ratio', d.sharpe_ratio ?? '—')}
+        <h3>🗓️ ${yr} / ${mo.toString().padStart(2,'0')}</h3>
+        ${rr('Total Trades', d.total_trades)}
+        ${rr('Win Rate', d.win_rate + '%')}
+        ${rr('Net P&L', fmtMoney(d.net_pnl))}
+        ${rr('Avg R:R', '1:' + d.avg_rr)}
+        ${rr('Max Drawdown', '$' + d.max_drawdown)}
+        ${rr('Profit Factor', d.profit_factor)}
+        ${rr('Sharpe Ratio', d.sharpe_ratio ?? '—')}
       </div>
-      ${(d.improvement_suggestions||[]).length ? `<div class="report-box"><h3>💡 Suggestions</h3><div class="rec-list">${d.improvement_suggestions.map(r=>'<div class="rec-item">💡 '+r+'</div>').join('')}</div></div>` : ''}
-    `;
-  } catch(e) { toast('Error loading report', true); }
+      ${(d.improvement_suggestions||[]).length ? `<div class="report-box"><h3>💡 Suggestions</h3>${d.improvement_suggestions.map(r=>'<div class="rec-item">💡 '+r+'</div>').join('')}</div>` : ''}`;
+  } catch(e) { toast('Error loading report', 'err'); }
 }
 
 function downloadMonthlyPDF() {
-  const yr = document.getElementById('m-year').value;
-  const mo = document.getElementById('m-month').value;
+  const yr = g('m-yr').value, mo = g('m-mo').value;
   window.open(API + '/analytics/reports/monthly/pdf?year=' + yr + '&month=' + mo, '_blank');
 }
 
-// ── Charts ────────────────────────────────────────────────────────────────────
+// ─── Charts Page ──────────────────────────────────────────────────────────────
 function loadAllCharts() {
-  const ts = Date.now();
+  const from = g('cf-from').value;
+  const to = g('cf-to').value;
+  const asset = g('cf-asset').value.trim();
+  const strat = g('cf-strat').value.trim();
+  const p = new URLSearchParams();
+  if (from) p.set('from_date', from);
+  if (to) p.set('to_date', to);
+  if (asset) p.set('asset', asset);
+  if (strat) p.set('strategy', strat);
+  p.set('_t', Date.now());
+  const qs = '?' + p.toString();
+
   const charts = [
-    ['c-equity','equity'],['c-drawdown','drawdown'],['c-daily','daily-pnl'],
-    ['c-wl','winloss'],['c-strat','strategy'],['c-pairs','pairs'],
-    ['c-hourly','hourly'],['c-rr','rr']
+    ['cc-eq','equity','cc-eq-l'],['cc-dd','drawdown','cc-dd-l'],
+    ['cc-dp','daily-pnl','cc-dp-l'],['cc-wl','winloss','cc-wl-l'],
+    ['cc-st','strategy','cc-st-l'],['cc-pa','pairs','cc-pa-l'],
+    ['cc-hr','hourly','cc-hr-l'],['cc-rr','rr','cc-rr-l'],
   ];
-  charts.forEach(([id, endpoint]) => {
-    const img = document.getElementById(id);
-    img.src = '';
-    img.src = API + '/analytics/charts/' + endpoint + '?' + ts;
-    img.style.display = 'block';
+  charts.forEach(([imgId, ep, loadId]) => {
+    const img = g(imgId);
+    const ldr = g(loadId);
+    ldr.textContent = 'Loading...';
+    ldr.style.display = 'block';
+    img.style.display = 'none';
+    img.onload = () => { ldr.style.display='none'; img.style.display='block'; };
+    img.onerror = () => { ldr.textContent = 'No data'; };
+    img.src = API + '/analytics/charts/' + ep + qs;
   });
 }
 
-// ── Export ────────────────────────────────────────────────────────────────────
-function exportFile(type) {
-  window.open(API + '/analytics/export/' + type, '_blank');
-}
-function getDailyPDF() {
-  const today = new Date().toISOString().slice(0,10);
-  window.open(API + '/analytics/reports/daily/pdf?d=' + today, '_blank');
+function clearChartsFilter() {
+  ['cf-from','cf-to','cf-asset','cf-strat'].forEach(id => g(id).value = '');
+  loadAllCharts();
 }
 
-// ── Init ──────────────────────────────────────────────────────────────────────
+// ─── AI Insights ──────────────────────────────────────────────────────────────
+async function loadInsights() {
+  const container = g('insights-container');
+  container.innerHTML = '<div class="empty"><span class="spin"></span> Analysing your trades...</div>';
+  try {
+    const r = await fetch(API + '/analytics/insights');
+    const insights = await r.json();
+    if (!insights.length) {
+      container.innerHTML = '<div class="empty"><div class="ei">✅</div>No issues found. Keep trading!</div>';
+      return;
+    }
+    container.innerHTML = `<div class="insights-grid">${insights.map(renderInsight).join('')}</div>`;
+  } catch(e) { container.innerHTML = '<div class="empty"><div class="ei">❌</div>Failed to load insights</div>'; }
+}
+
+function renderInsight(ins) {
+  return `<div class="insight-card ${ins.type}">
+    <div class="ic-header">
+      <span class="ic-icon">${ins.icon}</span>
+      <span class="ic-title">${ins.title}</span>
+    </div>
+    <div class="ic-body">${ins.message}</div>
+  </div>`;
+}
+
+// ─── Import ────────────────────────────────────────────────────────────────────
+function dzOver(e) { e.preventDefault(); g('drop-zone').classList.add('drag-over'); }
+function dzOut(e) { g('drop-zone').classList.remove('drag-over'); }
+function dzDrop(e) {
+  e.preventDefault();
+  dzOut(e);
+  const file = e.dataTransfer.files[0];
+  if (file) setImportFile(file);
+}
+function handleFileSelect(e) {
+  const file = e.target.files[0];
+  if (file) setImportFile(file);
+}
+function setImportFile(file) {
+  if (!file.name.endsWith('.csv')) { toast('Please select a .csv file', 'err'); return; }
+  importFile = file;
+  const dz = g('drop-zone');
+  dz.querySelector('p').innerHTML = `<strong>${file.name}</strong> (${(file.size/1024).toFixed(1)} KB) selected`;
+  g('import-btn').style.display = 'inline-flex';
+  g('import-result').innerHTML = '';
+}
+
+async function importBinance() {
+  if (!importFile) { toast('Select a CSV file first', 'err'); return; }
+  const btn = g('import-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin"></span> Importing...';
+
+  const formData = new FormData();
+  formData.append('file', importFile);
+
+  try {
+    const r = await fetch(API + '/analytics/import/binance', { method: 'POST', body: formData });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.detail || 'Import failed');
+
+    const resultEl = g('import-result');
+    resultEl.className = 'import-result ok';
+    resultEl.innerHTML = `
+      <strong>✅ ${d.imported} trades imported successfully!</strong>
+      ${d.skipped ? `<br><span style="color:var(--yellow)">⚠️ ${d.skipped} rows skipped</span>` : ''}
+      ${d.errors.length ? '<br><details style="margin-top:8px"><summary style="cursor:pointer;font-size:12px">View errors</summary><ul style="margin-top:6px;font-size:11px">'+d.errors.map(e=>'<li>'+e+'</li>').join('')+'</ul></details>' : ''}`;
+    toast(d.imported + ' trades imported!');
+    importFile = null;
+    btn.style.display = 'none';
+  } catch(e) {
+    g('import-result').className = 'import-result fail';
+    g('import-result').textContent = '❌ ' + e.message;
+    toast('Import failed: ' + e.message, 'err');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = 'Import Trades';
+  }
+}
+
+// ─── Export ───────────────────────────────────────────────────────────────────
+function exportFile(type) { window.open(API + '/analytics/export/' + type, '_blank'); }
+function getDailyPDF() {
+  window.open(API + '/analytics/reports/daily/pdf?d=' + new Date().toISOString().slice(0,10), '_blank');
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function g(id) { return document.getElementById(id); }
+
+function fmtMoney(val) {
+  if (val === null || val === undefined) return '—';
+  const n = parseFloat(val);
+  return (n >= 0 ? '+$' : '-$') + Math.abs(n).toFixed(2);
+}
+
+function fmtDate(s) {
+  if (!s) return '—';
+  return s.slice(0, 16).replace('T', ' ');
+}
+
+function fmtEnum(s) {
+  if (!s) return '—';
+  return s.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
+function rr(label, value) {
+  return `<div class="report-row"><span>${label}</span><span>${value}</span></div>`;
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
 window.onload = () => {
-  const today = new Date().toISOString().slice(0,10);
-  document.getElementById('daily-date').value = today;
-  const mon = new Date(); mon.setDate(mon.getDate() - mon.getDay() + 1);
-  document.getElementById('week-start').value = mon.toISOString().slice(0,10);
-  document.getElementById('week-end').value = today;
-  const now = new Date().toISOString().slice(0,16);
-  document.getElementById('f-opened').value = now;
+  const today = new Date().toISOString().slice(0, 10);
+  g('daily-date').value = today;
+  const mon = new Date();
+  mon.setDate(mon.getDate() - mon.getDay() + 1);
+  g('ws').value = mon.toISOString().slice(0, 10);
+  g('we').value = today;
+  g('lf-opened').value = new Date().toISOString().slice(0, 16);
   loadKPIs();
 };
 </script>
